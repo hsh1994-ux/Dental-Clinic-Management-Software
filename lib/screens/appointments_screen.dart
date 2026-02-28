@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../l10n/app_localizations.dart';
+import '../l10n/localization_helpers.dart';
 import '../providers/appointment_provider.dart';
 import 'appointment_form_screen.dart'; // Import the form screen
 
@@ -147,7 +148,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             title: Text(patient?.name ??
                 '${appLocalizations.patient} #${appointment.patientId}'),
             subtitle: Text(
-                '${DateFormat.jm(appLocalizations.localeName).format(DateTime.parse(appointment.appointmentDate))} - ${appointment.status}'),
+                '${DateFormat.jm(appLocalizations.localeName).format(DateTime.parse(appointment.appointmentDate))} - ${getLocalizedAppointmentStatus(appointment.status, appLocalizations)}'),
             trailing: Container(
               width: 96,  
               child: Row(
