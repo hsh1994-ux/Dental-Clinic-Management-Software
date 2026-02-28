@@ -34,6 +34,8 @@ dependencies:
   teeth_selector: ^0.2.2
   path: ^1.9.1
   crypto: ^3.0.3
+  sqlcipher_flutter_libs: ^0.6.0
+  sqlite3: ^2.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

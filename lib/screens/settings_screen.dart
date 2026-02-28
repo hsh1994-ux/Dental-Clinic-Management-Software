@@ -14,6 +14,7 @@ import '../providers/patient_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/treatment_provider.dart';
 import '../services/database_service.dart';
+import '../services/encryption_service.dart';
 import '../services/password_service.dart';
 import '../services/random_data_generator.dart';
 
@@ -174,7 +175,7 @@ class SettingsScreen extends StatelessWidget {
 
     try {
       await DatabaseService().clearDatabase();
-      // Clear the old password
+      // Clear the old password; DB stays open with current key
       await PasswordService.clearPassword();
 
       // Reload all data after clearing
@@ -643,6 +644,8 @@ class SettingsScreen extends StatelessWidget {
                     }
 
                     await PasswordService.savePassword(newController.text);
+                    EncryptionService.instance.setKey(newController.text);
+                    await DatabaseService().rekeyDatabase();
                     Navigator.pop(dialogContext, true);
                   },
                   child: Text(appLocalizations.save),
@@ -751,6 +754,8 @@ class SettingsScreen extends StatelessWidget {
                   onPressed: () async {
                     if (!formKey.currentState!.validate()) return;
                     await PasswordService.savePassword(newController.text);
+                    EncryptionService.instance.setKey(newController.text);
+                    await DatabaseService().rekeyDatabase();
                     Navigator.pop(dialogContext);
                   },
                   child: Text(appLocalizations.createPasswordButton),

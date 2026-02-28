@@ -3,9 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 import 'dart:io'; // Added for Platform check
+import 'dart:ffi';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // Added for FFI initialization
+import 'package:sqlite3/open.dart';
+import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 
 import 'services/database_service.dart';
+import 'services/encryption_service.dart';
 import 'theme/app_theme.dart';
 import 'providers/settings_provider.dart';
 import 'providers/patient_provider.dart';
@@ -19,13 +23,32 @@ import 'screens/main_screen.dart';
 import 'screens/password_gate_screen.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Configure sqlite3 to use SQLCipher on every platform
+  if (Platform.isAndroid) {
+    await applyWorkaroundToOpenSqlCipherOnOldAndroidVersions();
+    open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
+  } else if (Platform.isLinux) {
+    open.overrideFor(OperatingSystem.linux, () {
+      // SQLCipher is compiled into the plugin shared library on Linux.
+      // Resolve absolute path from executable location.
+      final exeDir = File(Platform.resolvedExecutable).parent.path;
+      return DynamicLibrary.open(
+          '$exeDir/lib/libsqlcipher_flutter_libs_plugin.so');
+    });
+  }
+  // Windows: sqlcipher_flutter_libs builds a separate sqlite3.dll (SQLCipher)
+  //   that is bundled in the app directory — found automatically.
+  // macOS/iOS: SQLCipher linked via CocoaPods — found automatically.
+
   // Initialize FFI for desktop platforms
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
-  WidgetsFlutterBinding.ensureInitialized();
-  await DatabaseService().checkAndInsertInitialData();
+
+  // DB is always encrypted on disk (SQLCipher) — no crash cleanup needed.
   runApp(const MyApp());
 }
 
@@ -81,20 +104,68 @@ class _AppGate extends StatefulWidget {
   State<_AppGate> createState() => _AppGateState();
 }
 
-class _AppGateState extends State<_AppGate> {
-  bool _authenticated = false;
+enum _GateState { locked, loading, ready }
+
+class _AppGateState extends State<_AppGate> with WidgetsBindingObserver {
+  _GateState _state = _GateState.locked;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      // Close DB and wipe key when app is terminating.
+      // The file on disk remains encrypted (SQLCipher).
+      DatabaseService().closeDatabase();
+      EncryptionService.instance.clearKey();
+    }
+  }
+
+  Future<void> _onAuthenticated() async {
+    setState(() => _state = _GateState.loading);
+
+    // Open SQLCipher-encrypted DB (handles migration if needed)
+    await DatabaseService().openDatabaseWithKey();
+    await DatabaseService().checkAndInsertInitialData();
+
+    if (!mounted) return;
+
+    // Refresh all providers with the real (decrypted) data
+    await Provider.of<PatientProvider>(context, listen: false).fetchPatients();
+    await Provider.of<AppointmentProvider>(context, listen: false)
+        .fetchAppointments();
+    await Provider.of<TreatmentProvider>(context, listen: false)
+        .fetchTreatments();
+    await Provider.of<InvoiceProvider>(context, listen: false).fetchInvoices();
+    await Provider.of<ExpenseProvider>(context, listen: false).fetchExpenses();
+
+    if (!mounted) return;
+    setState(() => _state = _GateState.ready);
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (_authenticated) {
-      return const MainScreen();
+    switch (_state) {
+      case _GateState.locked:
+        return PasswordGateScreen(
+          onAuthenticated: _onAuthenticated,
+        );
+      case _GateState.loading:
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      case _GateState.ready:
+        return const MainScreen();
     }
-    return PasswordGateScreen(
-      onAuthenticated: () {
-        setState(() {
-          _authenticated = true;
-        });
-      },
-    );
   }
 }

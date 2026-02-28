@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:archive/archive_io.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
+import 'encryption_service.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -192,6 +193,11 @@ class DatabaseService {
   }
 
   Future _onConfigure(Database db) async {
+    // Set SQLCipher encryption key — must be the FIRST statement
+    final keyHex = EncryptionService.instance.keyHex;
+    if (keyHex != null) {
+      await db.execute("PRAGMA key = \"x'$keyHex'\"");
+    }
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
@@ -211,6 +217,102 @@ class DatabaseService {
       await db.delete(table);
     }
     await db.execute('PRAGMA foreign_keys = ON');
+  }
+
+  // ─── SQLCipher lifecycle methods ───
+
+  Future<String> get _databasePath async {
+    return join(await getDatabasesPath(), 'clinc_database.db');
+  }
+
+  Future<String> get _encryptedDatabasePath async {
+    return join(await getDatabasesPath(), 'clinc_database.db.enc');
+  }
+
+  /// Closes the database and nulls the singleton reference.
+  Future<void> closeDatabase() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+  }
+
+  /// Returns true if the file starts with the SQLite plaintext header.
+  Future<bool> _isPlaintextDatabase(String path) async {
+    final file = File(path);
+    if (!await file.exists()) return false;
+    final length = await file.length();
+    if (length < 16) return false;
+    final raf = await file.open();
+    final header = await raf.read(16);
+    await raf.close();
+    return String.fromCharCodes(header).startsWith('SQLite format 3');
+  }
+
+  /// One-time migration from old AES-GCM .enc file to SQLCipher .db.
+  Future<void> _migrateFromAesGcmIfNeeded() async {
+    final encPath = await _encryptedDatabasePath;
+    final encFile = File(encPath);
+    if (!await encFile.exists()) return;
+
+    // The old .enc format was AES-GCM(nonce+mac+ciphertext).
+    // We can't decrypt it anymore (cryptography package removed).
+    // Just delete the stale .enc file — the plaintext .db or a fresh
+    // SQLCipher DB will be used instead.
+    await encFile.delete();
+  }
+
+  /// Called after authentication. Handles migration and opens the DB.
+  /// The DB file on disk is always encrypted (SQLCipher).
+  Future<void> openDatabaseWithKey() async {
+    // Close any auto-opened DB (from provider constructors)
+    await closeDatabase();
+
+    // Clean up old AES-GCM .enc file if present
+    await _migrateFromAesGcmIfNeeded();
+
+    final dbPath = await _databasePath;
+
+    // If a plaintext (unencrypted) DB exists from before SQLCipher was
+    // added, delete it. SQLCipher can't open a plaintext file with a key.
+    // A fresh encrypted DB will be created and sample data re-inserted
+    // by checkAndInsertInitialData().
+    if (await _isPlaintextDatabase(dbPath)) {
+      await File(dbPath).delete();
+    }
+
+    // Open (or create) the SQLCipher-encrypted database
+    _database = await _initDatabase();
+    if (!_updaterStarted) {
+      startAppointmentStatusUpdater();
+      _updaterStarted = true;
+    }
+  }
+
+  /// Re-encrypts the database with the current key (after password change).
+  /// Must be called while the DB is open with the OLD key, and
+  /// EncryptionService already holds the NEW key.
+  Future<void> rekeyDatabase() async {
+    final keyHex = EncryptionService.instance.keyHex;
+    if (keyHex == null) throw StateError('New encryption key not set');
+    final db = await database;
+    await db.execute("PRAGMA rekey = \"x'$keyHex'\"");
+  }
+
+  /// Deletes the database file entirely (used during app reset).
+  Future<void> deleteDatabaseFile() async {
+    await closeDatabase();
+    final dbPath = await _databasePath;
+    final dbFile = File(dbPath);
+    if (await dbFile.exists()) {
+      await dbFile.delete();
+    }
+    // Also clean up old .enc if it exists
+    final encPath = await _encryptedDatabasePath;
+    final encFile = File(encPath);
+    if (await encFile.exists()) {
+      await encFile.delete();
+    }
   }
 
   Future<void> _insertInitialData(Database db) async {

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/encryption_service.dart';
 import '../services/password_service.dart';
 
 /// Shown on every app launch.
 /// - If no password is stored: asks to create one (with confirm).
 /// - If password exists: asks to enter it.
 class PasswordGateScreen extends StatefulWidget {
-  final VoidCallback onAuthenticated;
+  final Future<void> Function() onAuthenticated;
 
   const PasswordGateScreen({super.key, required this.onAuthenticated});
 
@@ -59,6 +60,7 @@ class _PasswordGateScreenState extends State<PasswordGateScreen> {
       final isValid =
           await PasswordService.verifyPassword(_passwordController.text);
       if (isValid) {
+        EncryptionService.instance.setKey(_passwordController.text);
         widget.onAuthenticated();
       } else {
         setState(() {
@@ -70,6 +72,7 @@ class _PasswordGateScreenState extends State<PasswordGateScreen> {
     } else {
       // Create new password
       await PasswordService.savePassword(_passwordController.text);
+      EncryptionService.instance.setKey(_passwordController.text);
       widget.onAuthenticated();
     }
   }
