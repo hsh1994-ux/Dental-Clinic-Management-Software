@@ -376,8 +376,7 @@ class SettingsScreen extends StatelessWidget {
                     ListTile(
                       leading: const Icon(Icons.auto_fix_high_outlined),
                       title: Text(appLocalizations.generateTestData),
-                      subtitle:
-                          Text(appLocalizations.generateTestDataSubtitle),
+                      subtitle: Text(appLocalizations.generateTestDataSubtitle),
                       onTap: () => _showGenerateTestDataDialog(context),
                     ),
                   ],
@@ -400,7 +399,7 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (innerContext, setState) {
             return AlertDialog(
               title: Text(appLocalizations.generateTestData),
               content: Form(
@@ -467,8 +466,7 @@ class SettingsScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
-                      final count =
-                          int.parse(patientCountController.text);
+                      final count = int.parse(patientCountController.text);
                       Navigator.pop(dialogContext);
                       _generateTestData(context, count, selectedLanguage);
                     }
@@ -524,9 +522,7 @@ class SettingsScreen extends StatelessWidget {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(
-              content:
-                  Text('${appLocalizations.testDataError}: $result')),
+          SnackBar(content: Text('${appLocalizations.testDataError}: $result')),
         );
     }
   }
@@ -575,8 +571,8 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    final valid = await PasswordService.verifyPassword(
-                        controller.text);
+                    final valid =
+                        await PasswordService.verifyPassword(controller.text);
                     if (valid) {
                       Navigator.pop(dialogContext, true);
                     } else {
@@ -917,8 +913,7 @@ class _GeneratingProgressDialog extends StatefulWidget {
       _GeneratingProgressDialogState();
 }
 
-class _GeneratingProgressDialogState
-    extends State<_GeneratingProgressDialog> {
+class _GeneratingProgressDialogState extends State<_GeneratingProgressDialog> {
   double _progress = 0.0;
 
   @override

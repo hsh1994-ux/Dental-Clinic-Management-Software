@@ -25,7 +25,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   void initState() {
     super.initState();
     _invoiceProvider = Provider.of<InvoiceProvider>(context, listen: false);
-    _searchController = TextEditingController(text: _invoiceProvider.searchQuery);
+    _searchController =
+        TextEditingController(text: _invoiceProvider.searchQuery);
     _invoiceProvider.addListener(_onInvoiceProviderChanged);
     _searchController.addListener(() {
       if (_invoiceProvider.searchQuery != _searchController.text) {
@@ -131,7 +132,6 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           );
         },
       ),
-     
     );
   }
 
@@ -179,7 +179,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Chip(
-                        label: Text(getLocalizedInvoiceStatus(invoice.status, appLocalizations)),
+                        label: Text(getLocalizedInvoiceStatus(
+                            invoice.status, appLocalizations)),
                         backgroundColor:
                             _getStatusColor(context, invoice.status)
                                 .withOpacity(0.2),
@@ -230,60 +231,63 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
         child: SingleChildScrollView(
-          child: PaginatedDataTable(
-            showCheckboxColumn: false,
-            columnSpacing: 20,
-            horizontalMargin: 16,
-            dataRowMaxHeight: 56,
-            headingRowHeight: 56,
-            rowsPerPage: 20,
-            showFirstLastButtons: true,
-            columns: [
-              DataColumn(
-                  label: Text(appLocalizations.invoiceId,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold))),
-              DataColumn(
-                  label: Text(appLocalizations.patient,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold))),
-              DataColumn(
-                  label: Text(appLocalizations.date,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold))),
-              DataColumn(
-                  label: Text(appLocalizations.total,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold)),
-                  numeric: true),
-              DataColumn(
-                  label: Text(appLocalizations.status,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold))),
-              DataColumn(
-                  label: Center(
-                      child: Text(appLocalizations.actions,
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)))),
-            ],
-            source: _InvoiceDataSource(
-              invoices: invoices,
-              theme: theme,
-              colorScheme: colorScheme,
-              appLocalizations: appLocalizations,
-              patientMap: patientMap,
-              getStatusColor: _getStatusColor,
-              context: context,
-              onView: (invoice) => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          InvoiceDetailScreen(invoice: invoice))),
-              onDelete: (invoice) => _showDeleteConfirmationDialog(
-                  context, appLocalizations, () {
-                Provider.of<InvoiceProvider>(context, listen: false)
-                    .deleteInvoice(invoice.invoiceId!);
-              }),
+          child: SizedBox(
+            width: double.infinity,
+            child: PaginatedDataTable(
+              showCheckboxColumn: false,
+              columnSpacing: 20,
+              horizontalMargin: 16,
+              dataRowMaxHeight: 56,
+              headingRowHeight: 56,
+              rowsPerPage: 20,
+              showFirstLastButtons: true,
+              columns: [
+                DataColumn(
+                    label: Text(appLocalizations.invoiceId,
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Text(appLocalizations.patient,
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Text(appLocalizations.date,
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Text(appLocalizations.total,
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold)),
+                    numeric: true),
+                DataColumn(
+                    label: Text(appLocalizations.status,
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Center(
+                        child: Text(appLocalizations.actions,
+                            style: theme.textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold)))),
+              ],
+              source: _InvoiceDataSource(
+                invoices: invoices,
+                theme: theme,
+                colorScheme: colorScheme,
+                appLocalizations: appLocalizations,
+                patientMap: patientMap,
+                getStatusColor: _getStatusColor,
+                context: context,
+                onView: (invoice) => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            InvoiceDetailScreen(invoice: invoice))),
+                onDelete: (invoice) => _showDeleteConfirmationDialog(
+                    context, appLocalizations, () {
+                  Provider.of<InvoiceProvider>(context, listen: false)
+                      .deleteInvoice(invoice.invoiceId!);
+                }),
+              ),
             ),
           ),
         ),
@@ -291,7 +295,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
-  void _showDeleteConfirmationDialog(BuildContext context, AppLocalizations appLocalizations, VoidCallback onDelete) {
+  void _showDeleteConfirmationDialog(BuildContext context,
+      AppLocalizations appLocalizations, VoidCallback onDelete) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -317,6 +322,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       },
     );
   }
+
   Color _getStatusColor(BuildContext context, String status) {
     switch (status) {
       case 'مدفوعة بالكامل':
@@ -389,12 +395,11 @@ class _InvoiceDataSource extends DataTableSource {
           symbol: appLocalizations.currencySymbol,
         ).format(invoice.totalAmount ?? 0))),
         DataCell(Chip(
-          label: Text(getLocalizedInvoiceStatus(
-              invoice.status, appLocalizations)),
+          label:
+              Text(getLocalizedInvoiceStatus(invoice.status, appLocalizations)),
           backgroundColor:
               getStatusColor(context, invoice.status).withOpacity(0.2),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
           labelStyle: theme.textTheme.bodySmall,
         )),
         DataCell(

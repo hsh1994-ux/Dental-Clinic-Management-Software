@@ -99,8 +99,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
                   }
                   return LayoutBuilder(builder: (context, constraints) {
                     if (constraints.maxWidth > 600) {
-                      return _buildDataTable(
-                          context, patientProvider.patients, appLocalizations, constraints);
+                      return _buildDataTable(context, patientProvider.patients,
+                          appLocalizations, constraints);
                     } else {
                       return _buildListView(
                           context, patientProvider.patients, appLocalizations);
@@ -184,60 +184,64 @@ class _PatientsScreenState extends State<PatientsScreen> {
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
         child: SingleChildScrollView(
-          child: PaginatedDataTable(
-            showCheckboxColumn: false,
-            columnSpacing: 20,
-            horizontalMargin: 16,
-            dataRowMaxHeight: 56,
-            headingRowHeight: 56,
-            rowsPerPage: 20,
-            showFirstLastButtons: true,
-            columns: [
-              DataColumn(
-                  label: Expanded(
-                      child: Text(appLocalizations.name,
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)))),
-              DataColumn(
-                  label: Expanded(
-                      child: Text(appLocalizations.fileNumber,
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)))),
-              DataColumn(
-                  label: Expanded(
-                      child: Text(appLocalizations.phone,
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)))),
-              DataColumn(
-                  label: Expanded(
-                      child: Center(
-                          child: Text(appLocalizations.actions,
-                              style: theme.textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold))))),
-            ],
-            source: _PatientDataSource(
-              patients: patients,
-              theme: theme,
-              colorScheme: colorScheme,
-              appLocalizations: appLocalizations,
-              onView: (patient) => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          PatientDetailScreen(patient: patient))),
-              onEdit: (patient) => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          PatientFormScreen(patient: patient))),
-              onDelete: (patient) =>
-                  _showDeleteConfirmationDialog(context, patient),
+          child: SizedBox(
+            width: double.infinity,
+            child: PaginatedDataTable(
+              showCheckboxColumn: false,
+              columnSpacing: 20,
+              horizontalMargin: 16,
+              dataRowMaxHeight: 56,
+              headingRowHeight: 56,
+              rowsPerPage: 20,
+              showFirstLastButtons: true,
+              columns: [
+                DataColumn(
+                    label: Expanded(
+                        child: Text(appLocalizations.name,
+                            style: theme.textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold)))),
+                DataColumn(
+                    label: Expanded(
+                        child: Text(appLocalizations.fileNumber,
+                            style: theme.textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold)))),
+                DataColumn(
+                    label: Expanded(
+                        child: Text(appLocalizations.phone,
+                            style: theme.textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold)))),
+                DataColumn(
+                    label: Expanded(
+                        child: Center(
+                            child: Text(appLocalizations.actions,
+                                style: theme.textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold))))),
+              ],
+              source: _PatientDataSource(
+                patients: patients,
+                theme: theme,
+                colorScheme: colorScheme,
+                appLocalizations: appLocalizations,
+                onView: (patient) => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            PatientDetailScreen(patient: patient))),
+                onEdit: (patient) => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            PatientFormScreen(patient: patient))),
+                onDelete: (patient) =>
+                    _showDeleteConfirmationDialog(context, patient),
+              ),
             ),
           ),
         ),
       ),
     );
   }
+
   void _showDeleteConfirmationDialog(BuildContext context, Patient patient) {
     final appLocalizations = AppLocalizations.of(context)!;
     showDialog(
@@ -258,12 +262,12 @@ class _PatientsScreenState extends State<PatientsScreen> {
               onPressed: () {
                 Provider.of<PatientProvider>(context, listen: false)
                     .deletePatient(patient.patientId!);
-                        Provider.of<InvoiceProvider>(context, listen: false)
+                Provider.of<InvoiceProvider>(context, listen: false)
                     .deleteInvoice(patient.patientId!);
-                   
-                        Provider.of<AppointmentProvider>(context, listen: false)
+
+                Provider.of<AppointmentProvider>(context, listen: false)
                     .deleteAppointment(patient.patientId!);
-                      Provider.of<TreatmentProvider>(context, listen: false)
+                Provider.of<TreatmentProvider>(context, listen: false)
                     .deleteTreatment(patient.patientId!);
                 Navigator.of(context).pop();
               },
@@ -271,7 +275,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
           ],
         );
       },
-    );}
+    );
+  }
 }
 
 class _PatientDataSource extends DataTableSource {

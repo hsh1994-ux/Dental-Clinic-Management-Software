@@ -159,11 +159,14 @@ class DatabaseService {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      await db.execute('ALTER TABLE Treatments ADD COLUMN agreed_amount_paid REAL DEFAULT 0.0;');
+      await db.execute(
+          'ALTER TABLE Treatments ADD COLUMN agreed_amount_paid REAL DEFAULT 0.0;');
     }
     if (oldVersion < 3) {
-      await db.execute('ALTER TABLE Treatments ADD COLUMN expenses REAL DEFAULT 0.0;');
-      await db.execute('ALTER TABLE Treatments ADD COLUMN laboratory_name TEXT;');
+      await db.execute(
+          'ALTER TABLE Treatments ADD COLUMN expenses REAL DEFAULT 0.0;');
+      await db
+          .execute('ALTER TABLE Treatments ADD COLUMN laboratory_name TEXT;');
     }
     if (oldVersion < 4) {
       await db.transaction((txn) async {
@@ -246,10 +249,16 @@ class DatabaseService {
     if (!await file.exists()) return false;
     final length = await file.length();
     if (length < 16) return false;
-    final raf = await file.open();
-    final header = await raf.read(16);
-    await raf.close();
-    return String.fromCharCodes(header).startsWith('SQLite format 3');
+    RandomAccessFile? raf;
+    try {
+      raf = await file.open();
+      final header = await raf.read(16);
+      return String.fromCharCodes(header).startsWith('SQLite format 3');
+    } catch (_) {
+      return false;
+    } finally {
+      await raf?.close();
+    }
   }
 
   /// One-time migration from old AES-GCM .enc file to SQLCipher .db.
@@ -281,7 +290,11 @@ class DatabaseService {
     // A fresh encrypted DB will be created and sample data re-inserted
     // by checkAndInsertInitialData().
     if (await _isPlaintextDatabase(dbPath)) {
-      await File(dbPath).delete();
+      try {
+        await deleteDatabase(dbPath);
+      } catch (e) {
+        print('Error deleting plaintext database: $e');
+      }
     }
 
     // Open (or create) the SQLCipher-encrypted database
@@ -320,58 +333,66 @@ class DatabaseService {
 
   Future<void> _insertInitialData(Database db) async {
     try {
-      String jsonString = await rootBundle.loadString('assets/data/sample_data.json');
+      String jsonString =
+          await rootBundle.loadString('assets/data/sample_data.json');
+      if (jsonString.trim().isEmpty) return;
       final data = json.decode(jsonString);
 
       // Insert Patients
       if (data['patients'] != null) {
         for (var patient in data['patients']) {
-          await db.insert('Patients', patient, conflictAlgorithm: ConflictAlgorithm.replace);
+          await db.insert('Patients', patient,
+              conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
 
       // Insert Appointments
       if (data['appointments'] != null) {
         for (var appointment in data['appointments']) {
-          await db.insert('Appointments', appointment, conflictAlgorithm: ConflictAlgorithm.replace);
+          await db.insert('Appointments', appointment,
+              conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
 
       // Insert Treatments
       if (data['treatments'] != null) {
         for (var treatment in data['treatments']) {
-          await db.insert('Treatments', treatment, conflictAlgorithm: ConflictAlgorithm.replace);
+          await db.insert('Treatments', treatment,
+              conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
 
       // Insert Invoices
       if (data['invoices'] != null) {
         for (var invoice in data['invoices']) {
-          await db.insert('Invoices', invoice, conflictAlgorithm: ConflictAlgorithm.replace);
+          await db.insert('Invoices', invoice,
+              conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
 
       // Insert Invoice_Treatments
       if (data['invoice_treatments'] != null) {
         for (var invoiceTreatment in data['invoice_treatments']) {
-          await db.insert('Invoice_Treatments', invoiceTreatment, conflictAlgorithm: ConflictAlgorithm.replace);
+          await db.insert('Invoice_Treatments', invoiceTreatment,
+              conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
 
       // Insert Payments
       if (data['payments'] != null) {
         for (var payment in data['payments']) {
-          await db.insert('Payments', payment, conflictAlgorithm: ConflictAlgorithm.replace);
+          await db.insert('Payments', payment,
+              conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
 
       // Insert Expenses
       if (data['expenses'] != null) {
         for (var expense in data['expenses']) {
-          await db.insert('Expenses', expense, conflictAlgorithm: ConflictAlgorithm.replace);
+          await db.insert('Expenses', expense,
+              conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
-
     } catch (e) {
       print('Error loading initial data: $e');
     }
@@ -380,7 +401,8 @@ class DatabaseService {
   Future<void> checkAndInsertInitialData() async {
     final db = await database;
     // Check if patients table is empty, assuming if patients table is empty, then no data has been loaded
-    final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM Patients'));
+    final count = Sqflite.firstIntValue(
+        await db.rawQuery('SELECT COUNT(*) FROM Patients'));
     if (count == 0) {
       await _insertInitialData(db);
     }
@@ -468,8 +490,8 @@ class BackupService {
 
       final key = enc.Key(Uint8List.fromList(keyBytes));
       final iv = enc.IV.fromSecureRandom(16);
-      final encrypter = enc.Encrypter(
-          enc.AES(key, mode: enc.AESMode.cbc, padding: 'PKCS7'));
+      final encrypter =
+          enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc, padding: 'PKCS7'));
       final encrypted = encrypter.encryptBytes(zipBytes.toList(), iv: iv);
 
       // HMAC-SHA256 for quick password verification on import
@@ -527,8 +549,7 @@ class BackupService {
 
         // Verify password via HMAC
         final hmac = crypto.Hmac(crypto.sha256, keyBytes);
-        final computedHmac =
-            hmac.convert(utf8.encode('clinc-backup-verify'));
+        final computedHmac = hmac.convert(utf8.encode('clinc-backup-verify'));
         if (!_constantTimeEquals(computedHmac.bytes, storedHmac)) {
           throw WrongPasswordException();
         }
@@ -617,7 +638,8 @@ class BackupService {
         List<Map<String, dynamic>> tableData =
             List<Map<String, dynamic>>.from(allData[table] ?? []);
         for (var row in tableData) {
-          batch.insert(table, row, conflictAlgorithm: ConflictAlgorithm.replace);
+          batch.insert(table, row,
+              conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
 
