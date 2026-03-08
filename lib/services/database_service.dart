@@ -12,6 +12,7 @@ import 'package:encrypt/encrypt.dart' as enc;
 import 'package:crypto/crypto.dart' as crypto;
 import 'dart:typed_data';
 import 'encryption_service.dart';
+import 'xray_storage_service.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -466,7 +467,9 @@ class BackupService {
       final patients = allData['Patients'] ?? [];
       for (var patient in patients) {
         final xrayPath = patient['xray_image'];
-        if (xrayPath != null && xrayPath.isNotEmpty) {
+        if (xrayPath != null &&
+            xrayPath.isNotEmpty &&
+            !XRayStorageService.isEmbedded(xrayPath)) {
           final imageFile = File(xrayPath);
           if (await imageFile.exists()) {
             final imageName = basename(imageFile.path);
@@ -619,7 +622,9 @@ class BackupService {
       for (var i = 0; i < patients.length; i++) {
         var patient = patients[i];
         final oldImagePath = patient['xray_image'];
-        if (oldImagePath != null && oldImagePath.isNotEmpty) {
+        if (oldImagePath != null &&
+            oldImagePath.isNotEmpty &&
+            !XRayStorageService.isEmbedded(oldImagePath)) {
           final imageName = basename(oldImagePath);
           final oldImageFile = File('${imagesDir.path}/$imageName');
           if (await oldImageFile.exists()) {

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +10,7 @@ import '../l10n/app_localizations.dart';
 import '../l10n/localization_helpers.dart';
 import '../models/patient.dart';
 import '../providers/patient_provider.dart';
+import '../services/xray_storage_service.dart';
 
 class PatientFormScreen extends StatefulWidget {
   final Patient? patient;
@@ -25,11 +27,11 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   late TextEditingController _ageController;
   late TextEditingController _addressController;
   late TextEditingController _phoneController;
-  late TextEditingController _xrayImageController;
   String? _gender;
   String? _maritalStatus;
   DateTime? _firstVisitDate;
   XFile? _xrayImageFile;
+  String? _storedXrayImage;
 
   @override
   void initState() {
@@ -39,8 +41,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         TextEditingController(text: widget.patient?.age?.toString());
     _addressController = TextEditingController(text: widget.patient?.address);
     _phoneController = TextEditingController(text: widget.patient?.phone);
-    _xrayImageController =
-        TextEditingController(text: widget.patient?.xrayImage);
+    _storedXrayImage = widget.patient?.xrayImage;
     _gender = widget.patient?.gender;
     _maritalStatus = widget.patient?.maritalStatus;
     _firstVisitDate = widget.patient?.firstVisitDate != null
@@ -54,7 +55,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     _ageController.dispose();
     _addressController.dispose();
     _phoneController.dispose();
-    _xrayImageController.dispose();
     super.dispose();
   }
 
@@ -79,13 +79,33 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     if (image != null) {
       setState(() {
         _xrayImageFile = image;
-        _xrayImageController.text = image.path;
       });
     }
   }
 
-  void _savePatient() {
+  Future<void> _savePatient() async {
     if (_formKey.currentState!.validate()) {
+      String? storedXrayImage = _storedXrayImage;
+
+      try {
+        if (_xrayImageFile != null) {
+          storedXrayImage = await XRayStorageService.importImage(
+            _xrayImageFile!.path,
+          );
+        } else if (storedXrayImage != null &&
+            storedXrayImage.isNotEmpty &&
+            !XRayStorageService.isEmbedded(storedXrayImage)) {
+          storedXrayImage =
+              await XRayStorageService.importImage(storedXrayImage);
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+        return;
+      }
+
       final newPatient = Patient(
         patientId: widget.patient?.patientId,
         name: _nameController.text,
@@ -97,19 +117,26 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         maritalStatus: _maritalStatus,
         fileNumber: widget.patient?.fileNumber ?? '', // Handled by provider
         firstVisitDate: _firstVisitDate?.toIso8601String(),
-        xrayImage: _xrayImageController.text.isEmpty
-            ? null
-            : _xrayImageController.text,
+        xrayImage: storedXrayImage,
       );
 
       final provider = Provider.of<PatientProvider>(context, listen: false);
       if (widget.patient == null) {
-        provider.addPatient(newPatient);
+        await provider.addPatient(newPatient);
       } else {
-        provider.updatePatient(newPatient);
+        await provider.updatePatient(newPatient);
       }
+      if (!mounted) return;
       Navigator.of(context).pop();
     }
+  }
+
+  Uint8List? get _embeddedPreviewBytes {
+    return XRayStorageService.decodeEmbeddedBytes(_storedXrayImage);
+  }
+
+  String? get _legacyPreviewPath {
+    return XRayStorageService.normalizeLegacyPath(_storedXrayImage);
   }
 
   @override
@@ -260,6 +287,30 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   Widget _buildImagePicker(BuildContext context) {
     final appLocalizations = AppLocalizations.of(context)!;
+    Widget preview;
+
+    if (_xrayImageFile != null) {
+      preview = Image.file(File(_xrayImageFile!.path), fit: BoxFit.cover);
+    } else if (_embeddedPreviewBytes != null) {
+      preview = Image.memory(_embeddedPreviewBytes!, fit: BoxFit.cover);
+    } else if (_legacyPreviewPath != null &&
+        _legacyPreviewPath!.isNotEmpty &&
+        File(_legacyPreviewPath!).existsSync()) {
+      preview = Image.file(File(_legacyPreviewPath!), fit: BoxFit.cover);
+    } else {
+      preview = Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.image_not_supported_outlined,
+                size: 48, color: Colors.grey),
+            const SizedBox(height: 8),
+            Text(appLocalizations.noImageSelected),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         Container(
@@ -272,22 +323,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(11),
-            child: _xrayImageFile != null
-                ? Image.file(File(_xrayImageFile!.path), fit: BoxFit.cover)
-                : (_xrayImageController.text.isNotEmpty
-                    ? Image.file(File(_xrayImageController.text),
-                        fit: BoxFit.cover)
-                    : Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.image_not_supported_outlined,
-                                size: 48, color: Colors.grey),
-                            const SizedBox(height: 8),
-                            Text(appLocalizations.noImageSelected),
-                          ],
-                        ),
-                      )),
+            child: preview,
           ),
         ),
         const SizedBox(height: 16),
