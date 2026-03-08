@@ -64,9 +64,8 @@ class _PasswordGateScreenState extends State<PasswordGateScreen> {
         widget.onAuthenticated();
       } else {
         setState(() {
-          _errorMessage =
-              AppLocalizations.of(context)?.incorrectPassword ??
-                  'Incorrect password';
+          _errorMessage = AppLocalizations.of(context)?.incorrectPassword ??
+              'Incorrect password';
         });
       }
     } else {
@@ -106,9 +105,7 @@ class _PasswordGateScreenState extends State<PasswordGateScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    isCreating
-                        ? l10n.createPassword
-                        : l10n.enterPassword,
+                    isCreating ? l10n.createPassword : l10n.enterPassword,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),

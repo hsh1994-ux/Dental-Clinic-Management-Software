@@ -43,3 +43,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Python app environment files
+python_module/*.exe
+python_module/*.dll
+python_module/*.pyd
+python_module/Lib/
+python_module/Scripts/
+python_module/share/
+python_module/*.zip
+python_module/python313._pth
+python_module/python.cat
+python_module/annotated_images/
+python_module/__pycache__/

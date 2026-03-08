@@ -86,7 +86,7 @@ class MyApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: const [
-                Locale('en', ''), // English
+              Locale('en', ''), // English
               Locale('ar', ''), // Arabic
             ],
             home: const _AppGate(),
@@ -157,9 +157,7 @@ class _AppGateState extends State<_AppGate> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     switch (_state) {
       case _GateState.locked:
-        return PasswordGateScreen(
-          onAuthenticated: _onAuthenticated,
-        );
+        return MainScreen();
       case _GateState.loading:
         return const Scaffold(
           body: Center(child: CircularProgressIndicator()),

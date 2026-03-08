@@ -31,7 +31,9 @@ class XRayAnalysisResult {
   factory XRayAnalysisResult.fromJson(Map<String, dynamic> json) {
     return XRayAnalysisResult(
       analysisId: json['analysis_id'] ?? 'N/A',
-      timestamp: json['timestamp'] != null ? DateTime.parse(json['timestamp']) : null, // Handle nullable timestamp
+      timestamp: json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'])
+          : null, // Handle nullable timestamp
       imagePath: json['image_path'] ?? 'N/A',
       annotatedImagePath: json['annotated_image_path'],
       analysisStatus: json['analysis_status'] ?? 'error',
@@ -90,7 +92,8 @@ class XRayAnalysisService {
   // For flutter run testing, use direct paths
   static String get _pythonExecutable {
     if (kDebugMode) {
-      return 'D:\\example\\porjects\\clinc\\clinc\\python_module\\python.exe';
+      // Use the current project directory instead of a hardcoded D:\ path
+      return path.join(Directory.current.path, 'python_module', 'python.exe');
     }
     final exePath = Platform.resolvedExecutable;
     final exeDir = path.dirname(exePath);
@@ -99,14 +102,17 @@ class XRayAnalysisService {
 
   static String get _pythonScriptPath {
     if (kDebugMode) {
-      return 'D:\\example\\porjects\\clinc\\clinc\\python_module\\xray_analyzer.py';
+      // Use the current project directory instead of a hardcoded D:\ path
+      return path.join(
+          Directory.current.path, 'python_module', 'xray_analyzer.py');
     }
     final exePath = Platform.resolvedExecutable;
     final exeDir = path.dirname(exePath);
     return path.join(exeDir, 'python_module', 'xray_analyzer.py');
   }
 
-  Future<XRayAnalysisResult> analyzeXRayImage(String imagePath, String patientName, String locale) async {
+  Future<XRayAnalysisResult> analyzeXRayImage(
+      String imagePath, String patientName, String locale) async {
     if (!File(_pythonScriptPath).existsSync()) {
       debugPrint('Python script not found at: $_pythonScriptPath');
       return XRayAnalysisResult.error('Python analysis script not found.');
@@ -139,10 +145,11 @@ class XRayAnalysisService {
         // Attempt to parse error message if Python script returned one
         try {
           final jsonError = jsonDecode(result.stdout as String);
-          return XRayAnalysisResult.error(jsonError['message'] ?? 'Unknown Python script error.');
+          return XRayAnalysisResult.error(
+              jsonError['message'] ?? 'Unknown Python script error.');
         } catch (_) {
-          
-          return XRayAnalysisResult.error('Python script failed: ${result.stderr}');
+          return XRayAnalysisResult.error(
+              'Python script failed: ${result.stderr}');
         }
       }
     } catch (e) {
