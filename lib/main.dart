@@ -157,7 +157,7 @@ class _AppGateState extends State<_AppGate> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     switch (_state) {
       case _GateState.locked:
-        return MainScreen();
+        return PasswordGateScreen(onAuthenticated: _onAuthenticated);
       case _GateState.loading:
         return const Scaffold(
           body: Center(child: CircularProgressIndicator()),
