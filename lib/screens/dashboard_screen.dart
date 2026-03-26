@@ -10,9 +10,12 @@ import '../providers/appointment_provider.dart';
 import '../providers/invoice_provider.dart';
 import '../repositories/patient_xray_repository.dart';
 import '../services/xray_storage_service.dart';
-import 'patient_form_screen.dart';
 import 'appointment_form_screen.dart';
+import 'appointments_screen.dart';
 import 'invoice_form_screen.dart';
+import 'invoices_screen.dart';
+import 'patient_form_screen.dart';
+import 'patients_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -50,6 +53,8 @@ class DashboardScreen extends StatelessWidget {
                               value: patientProvider.patients.length.toString(),
                               icon: Icons.people_outline,
                               color: Colors.blue.shade700,
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const PatientsScreen())),
                             ),
                             DashboardCard(
                               title: appLocalizations.todaysAppointments,
@@ -59,6 +64,8 @@ class DashboardScreen extends StatelessWidget {
                                   .toString(),
                               icon: Icons.calendar_today_outlined,
                               color: Colors.green.shade700,
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const AppointmentsScreen())),
                             ),
                             DashboardCard(
                               title: appLocalizations.pendingInvoices,
@@ -69,6 +76,8 @@ class DashboardScreen extends StatelessWidget {
                                   .toString(),
                               icon: Icons.receipt_long_outlined,
                               color: Colors.orange.shade700,
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const InvoicesScreen())),
                             ),
                           ];
                           return GridView.builder(
@@ -168,6 +177,7 @@ class DashboardCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
   const DashboardCard({
     super.key,
@@ -175,6 +185,7 @@ class DashboardCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
+    this.onTap,
   });
 
   @override
@@ -183,7 +194,11 @@ class DashboardCard extends StatelessWidget {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,6 +224,7 @@ class DashboardCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
