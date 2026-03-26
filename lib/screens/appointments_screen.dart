@@ -8,7 +8,8 @@ import 'package:table_calendar/table_calendar.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/localization_helpers.dart';
 import '../providers/appointment_provider.dart';
-import 'appointment_form_screen.dart'; // Import the form screen
+import 'appointment_form_screen.dart';
+import 'package:flutter/material.dart' show Colors;
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -132,11 +133,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           // Patient not found, handle gracefully
         }
 
+        final statusColor = appointmentStatusColor(appointment.status);
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8.0),
           elevation: 2,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: statusColor, width: 5),
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: Theme.of(context).primaryColorLight,
@@ -187,6 +196,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 ),
               );
             },
+          ),
           ),
         );
       },

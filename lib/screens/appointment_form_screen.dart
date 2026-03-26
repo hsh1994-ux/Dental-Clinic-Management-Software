@@ -278,7 +278,7 @@ class _AppointmentFormScreenState extends State<AppointmentFormScreen> {
                     value: _status,
                     decoration: inputDecoration.copyWith(
                         labelText: appLocalizations.statusFormField),
-                    items: <String>['محجوز', 'ملغي', 'منجز']
+                    items: <String>['محجوز', 'ملغي', 'منجز', 'لم يحضر']
                         .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,

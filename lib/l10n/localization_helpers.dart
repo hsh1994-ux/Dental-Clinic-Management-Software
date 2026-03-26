@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart' show Color;
+
 import 'app_localizations.dart';
 
 /// Maps Arabic DB status values to localized display strings
@@ -9,8 +11,25 @@ String getLocalizedAppointmentStatus(String dbValue, AppLocalizations l10n) {
       return l10n.statusCancelled;
     case 'منجز':
       return l10n.statusCompleted;
+    case 'لم يحضر':
+      return 'No Show';
     default:
       return dbValue;
+  }
+}
+
+Color appointmentStatusColor(String status) {
+  switch (status) {
+    case 'منجز':
+      return const Color(0xFF4CAF50); // green
+    case 'محجوز':
+      return const Color(0xFFFFC107); // yellow/amber
+    case 'ملغي':
+      return const Color(0xFFF44336); // red
+    case 'لم يحضر':
+      return const Color(0xFF2196F3); // blue
+    default:
+      return const Color(0xFF9E9E9E); // grey
   }
 }
 
