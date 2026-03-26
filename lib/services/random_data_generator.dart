@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import '../models/appointment.dart';
@@ -5,6 +6,7 @@ import '../models/expense.dart';
 import '../models/invoice.dart';
 import '../models/invoice_treatment.dart';
 import '../models/patient.dart';
+import '../models/patient_xray.dart';
 import '../models/payment.dart';
 import '../models/treatment.dart';
 import '../repositories/appointment_repository.dart';
@@ -12,6 +14,7 @@ import '../repositories/expense_repository.dart';
 import '../repositories/invoice_repository.dart';
 import '../repositories/invoice_treatment_repository.dart';
 import '../repositories/patient_repository.dart';
+import '../repositories/patient_xray_repository.dart';
 import '../repositories/payment_repository.dart';
 import '../repositories/treatment_repository.dart';
 
@@ -27,6 +30,7 @@ class RandomDataGenerator {
       InvoiceTreatmentRepository();
   final PaymentRepository _paymentRepo = PaymentRepository();
   final ExpenseRepository _expenseRepo = ExpenseRepository();
+  final PatientXrayRepository _patientXrayRepo = PatientXrayRepository();
 
   // ─── Name pools ───
 
@@ -166,6 +170,50 @@ class RandomDataGenerator {
     return start.add(Duration(days: _random.nextInt(diff.clamp(1, 99999))));
   }
 
+  // ─── Build combined x-ray image path list from x-ray_images folder ───
+
+  List<String> _buildXrayImagePaths() {
+    final paths = <String>[];
+    // Try to locate the x-ray_images folder relative to the executable or
+    // common dev locations.
+    final candidates = [
+      Platform.resolvedExecutable, // running binary path
+      Platform.script.toFilePath(), // script path (dart run)
+    ];
+
+    for (final candidate in candidates) {
+      // Walk up until we find the folder or run out of parents
+      var dir = Directory(candidate).parent;
+      for (int i = 0; i < 10; i++) {
+        final xrayDir = Directory('${dir.path}/x-ray_images');
+        if (xrayDir.existsSync()) {
+          for (final sub in ['1', '2']) {
+            final subDir = Directory('${xrayDir.path}/$sub');
+            if (subDir.existsSync()) {
+              final files = subDir
+                  .listSync()
+                  .whereType<File>()
+                  .where((f) {
+                    final ext = f.path.toLowerCase();
+                    return ext.endsWith('.jpg') ||
+                        ext.endsWith('.jpeg') ||
+                        ext.endsWith('.png');
+                  })
+                  .map((f) => f.path)
+                  .toList();
+              paths.addAll(files);
+            }
+          }
+          return paths;
+        }
+        final parent = dir.parent;
+        if (parent.path == dir.path) break;
+        dir = parent;
+      }
+    }
+    return paths;
+  }
+
   // ─── Main generate method ───
 
   Future<void> generate({
@@ -175,6 +223,9 @@ class RandomDataGenerator {
   }) async {
     final now = DateTime.now();
     final twoYearsAgo = now.subtract(const Duration(days: 730));
+
+    // Build combined x-ray image path list once
+    final xrayImagePaths = _buildXrayImagePaths();
 
     // 1. Create patients
     final List<int> patientIds = [];
@@ -233,15 +284,16 @@ class RandomDataGenerator {
       await _patientRepo.updatePatient(finalPatient);
       patientIds.add(id);
 
-      onProgress((i + 1) / patientCount * 0.3); // 0–30%
+      onProgress((i + 1) / patientCount * 0.25); // 0–25%
     }
 
-    // 2. Create treatments (1-4 per patient)
+    // 2. Create treatments (1-4 per patient) + x-ray images with treatment-related dates
     final List<_TreatmentInfo> treatmentInfos = [];
     for (int pi = 0; pi < patientIds.length; pi++) {
       final patientId = patientIds[pi];
       final treatmentCount = 1 + _random.nextInt(4);
       final isArabic = _useArabic(language);
+      final patientTreatmentDates = <DateTime>[];
 
       for (int t = 0; t < treatmentCount; t++) {
         final agreedAmount = (100 + _random.nextInt(900)).toDouble(); // 100-999
@@ -278,9 +330,28 @@ class RandomDataGenerator {
           agreedAmount: agreedAmount,
           treatmentDate: treatmentDate,
         ));
+        patientTreatmentDates.add(treatmentDate);
       }
 
-      onProgress(0.3 + (pi + 1) / patientIds.length * 0.2); // 30–50%
+      // Assign 0–10 x-ray images per patient, each dated near a treatment date
+      if (xrayImagePaths.isNotEmpty && patientTreatmentDates.isNotEmpty) {
+        final imageCount = _random.nextInt(11); // 0 to 10
+        final shuffled = List<String>.from(xrayImagePaths)..shuffle(_random);
+        final selected = shuffled.take(imageCount);
+        for (final imagePath in selected) {
+          // Pick a random treatment date and offset 0–7 days before it
+          final baseDate = _pick(patientTreatmentDates);
+          final daysOffset = _random.nextInt(8); // 0–7 days before treatment
+          final xrayDate = baseDate.subtract(Duration(days: daysOffset));
+          await _patientXrayRepo.insertPatientXray(PatientXray(
+            patientId: patientId,
+            imagePath: imagePath,
+            createdAt: xrayDate.toIso8601String(),
+          ));
+        }
+      }
+
+      onProgress(0.25 + (pi + 1) / patientIds.length * 0.25); // 25–50%
     }
 
     // 3. Create appointments (1-3 per patient)

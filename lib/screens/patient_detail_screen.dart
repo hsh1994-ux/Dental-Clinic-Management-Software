@@ -7,6 +7,7 @@ import 'package:clinc/models/treatment.dart';
 import 'package:clinc/screens/invoice_form_screen.dart';
 import 'package:clinc/services/xray_analysis_service.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -16,6 +17,8 @@ import '../models/patient.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/invoice_provider.dart';
 import '../providers/treatment_provider.dart';
+import '../models/patient_xray.dart';
+import '../repositories/patient_xray_repository.dart';
 import '../services/xray_storage_service.dart';
 import 'appointment_form_screen.dart';
 import 'invoice_detail_screen.dart';
@@ -904,7 +907,7 @@ class _AppointmentsTab extends _BasePatientTab<Appointment> {
   }
 }
 
-class _XRayTab extends StatelessWidget {
+class _XRayTab extends StatefulWidget {
   final Patient patient;
   final XRayAnalysisResult? xrayAnalysisResult;
   final bool isLoadingXRayAnalysis;
@@ -920,139 +923,292 @@ class _XRayTab extends StatelessWidget {
   });
 
   @override
+  State<_XRayTab> createState() => _XRayTabState();
+}
+
+class _XRayTabState extends State<_XRayTab> {
+  late Future<List<PatientXray>> _xraysFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _xraysFuture = PatientXrayRepository()
+        .getXraysForPatient(widget.patient.patientId!);
+  }
+
+  void _refreshGallery() {
+    setState(() {
+      _xraysFuture = PatientXrayRepository()
+          .getXraysForPatient(widget.patient.patientId!);
+    });
+  }
+
+  Future<void> _addXrayImage() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (file == null || !mounted) return;
+
+    try {
+      final embedded = await XRayStorageService.importImage(file.path);
+      if (embedded == null) return;
+      await PatientXrayRepository().insertPatientXray(PatientXray(
+        patientId: widget.patient.patientId!,
+        imagePath: embedded,
+        createdAt: DateTime.now().toIso8601String(),
+      ));
+      _refreshGallery();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  String _formatDate(String isoDate) {
+    try {
+      final dt = DateTime.parse(isoDate);
+      return DateFormat('MMM d, yyyy').format(dt);
+    } catch (_) {
+      return isoDate;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final appLocalizations = AppLocalizations.of(context)!;
 
-    if (patient.xrayImage == null || patient.xrayImage!.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.image_not_supported_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              appLocalizations.noImageSelected,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-      );
-    }
+    return FutureBuilder<List<PatientXray>>(
+      future: _xraysFuture,
+      builder: (context, snapshot) {
+        final galleryImages = snapshot.data ?? [];
 
-    final storedImage = patient.xrayImage!;
+        final hasSingleImage = widget.patient.xrayImage != null &&
+            widget.patient.xrayImage!.isNotEmpty;
+        final hasImages = galleryImages.isNotEmpty || hasSingleImage;
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!hasImages) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  appLocalizations.noImageSelected,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _addXrayImage,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: const Text('Add X-Ray'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            // ── Gallery grid from PatientXrayImages table ──
+            if (galleryImages.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    appLocalizations.xrayGallery,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  IconButton(
+                    onPressed: _addXrayImage,
+                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    tooltip: 'Add X-Ray',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: galleryImages.length,
+                itemBuilder: (context, index) {
+                  final xray = galleryImages[index];
+                  final file = File(xray.imagePath);
+                  final embeddedBytes =
+                      XRayStorageService.decodeEmbeddedBytes(xray.imagePath);
+                  final heroTag = 'xray_gallery_${xray.xrayId ?? index}';
+                  final dateLabel = _formatDate(xray.createdAt);
+
+                  Widget imageWidget;
+                  if (embeddedBytes != null) {
+                    imageWidget = Image.memory(embeddedBytes,
+                        fit: BoxFit.cover, width: double.infinity,
+                        errorBuilder: (_, __, ___) =>
+                            const Center(child: Icon(Icons.broken_image)));
+                  } else if (file.existsSync()) {
+                    imageWidget = Image.file(file,
+                        fit: BoxFit.cover, width: double.infinity,
+                        errorBuilder: (_, __, ___) =>
+                            const Center(child: Icon(Icons.broken_image)));
+                  } else {
+                    imageWidget =
+                        const Center(child: Icon(Icons.broken_image));
+                  }
+
+                  return GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FullScreenImageViewer(
+                          heroTag: heroTag,
+                          imagePath:
+                              embeddedBytes == null ? xray.imagePath : null,
+                          imageBytes: embeddedBytes,
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: Hero(
+                            tag: heroTag,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: imageWidget,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          dateLabel,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(fontWeight: FontWeight.w500),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // ── Single image (patient.xrayImage – backward compat + analysis) ──
+            if (hasSingleImage) ...[
+              if (galleryImages.isEmpty)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      appLocalizations.xrayGallery,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    IconButton(
+                      onPressed: _addXrayImage,
+                      icon: const Icon(Icons.add_photo_alternate_outlined),
+                      tooltip: 'Add X-Ray',
+                    ),
+                  ],
+                ),
+              _buildSingleImageCard(context, appLocalizations),
+              const SizedBox(height: 16),
+              _buildXRayAnalysisSection(context, appLocalizations),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSingleImageCard(
+      BuildContext context, AppLocalizations appLocalizations) {
+    final storedImage = widget.patient.xrayImage!;
     final embeddedBytes = XRayStorageService.decodeEmbeddedBytes(storedImage);
     final imagePath = XRayStorageService.normalizeLegacyPath(storedImage);
     final imageExists = embeddedBytes != null ||
         (imagePath != null && File(imagePath).existsSync());
 
-    if (!imageExists) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.broken_image_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              appLocalizations.noImageSelected,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-      );
-    }
+    if (!imageExists) return const SizedBox.shrink();
 
     final Widget preview = embeddedBytes != null
-        ? Image.memory(
-            embeddedBytes,
-            width: double.infinity,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Text(
-                  appLocalizations.noImageSelected,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ),
-          )
-        : Image.file(
-            File(imagePath!),
-            width: double.infinity,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Text(
-                  appLocalizations.noImageSelected,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ),
-          );
+        ? Image.memory(embeddedBytes,
+            width: double.infinity, fit: BoxFit.contain)
+        : Image.file(File(imagePath!),
+            width: double.infinity, fit: BoxFit.contain);
 
-    return ListView(
-      padding: const EdgeInsets.all(16.0),
-      children: [
-        Card(
-          elevation: 4,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  appLocalizations.xrayGallery,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => FullScreenImageViewer(
-                        heroTag: storedImage,
-                        imagePath: imagePath,
-                        imageBytes: embeddedBytes,
-                      ),
-                    ),
-                  );
-                },
-                child: Hero(
-                  tag: storedImage,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(16.0),
-                      bottomRight: Radius.circular(16.0),
-                    ),
-                    child: preview,
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              appLocalizations.xrayGallery,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Theme.of(context).primaryColor,
+                    fontWeight: FontWeight.bold,
                   ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => FullScreenImageViewer(
+                  heroTag: storedImage,
+                  imagePath: imagePath,
+                  imageBytes: embeddedBytes,
                 ),
               ),
-            ],
+            ),
+            child: Hero(
+              tag: storedImage,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16.0),
+                  bottomRight: Radius.circular(16.0),
+                ),
+                child: preview,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        _buildXRayAnalysisSection(context, appLocalizations),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildXRayAnalysisSection(BuildContext context, AppLocalizations appLocalizations) {
+    final xrayAnalysisResult = widget.xrayAnalysisResult;
+    final isLoadingXRayAnalysis = widget.isLoadingXRayAnalysis;
+    final xrayAnalysisError = widget.xrayAnalysisError;
     if (isLoadingXRayAnalysis) {
       return const Card(
         child: Padding(

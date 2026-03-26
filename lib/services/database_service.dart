@@ -69,7 +69,7 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'clinc_database.db');
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -156,6 +156,15 @@ class DatabaseService {
         FOREIGN KEY (patient_id) REFERENCES Patients(patient_id) ON DELETE CASCADE
       )
     ''');
+    await db.execute('''
+      CREATE TABLE PatientXrayImages (
+        xray_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        image_path TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (patient_id) REFERENCES Patients(patient_id) ON DELETE CASCADE
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -197,6 +206,17 @@ class DatabaseService {
         await txn.execute('ALTER TABLE Patients_new RENAME TO Patients');
       });
     }
+    if (oldVersion < 5) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS PatientXrayImages (
+          xray_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          patient_id INTEGER NOT NULL,
+          image_path TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (patient_id) REFERENCES Patients(patient_id) ON DELETE CASCADE
+        )
+      ''');
+    }
   }
 
   Future _onConfigure(Database db) async {
@@ -211,6 +231,7 @@ class DatabaseService {
   Future<void> clearDatabase() async {
     final db = await database;
     final tables = [
+      'PatientXrayImages',
       'Payments',
       'Invoice_Treatments',
       'Appointments',
