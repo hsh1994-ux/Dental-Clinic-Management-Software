@@ -16,12 +16,14 @@ import '../l10n/localization_helpers.dart';
 import '../models/patient.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/invoice_provider.dart';
+import '../providers/patient_provider.dart';
 import '../providers/treatment_provider.dart';
 import '../models/patient_xray.dart';
 import '../repositories/patient_xray_repository.dart';
 import '../services/xray_storage_service.dart';
 import 'appointment_form_screen.dart';
 import 'invoice_detail_screen.dart';
+import 'treatment_detail_screen.dart';
 import 'treatment_form_screen.dart';
 
 class PatientDetailScreen extends StatefulWidget {
@@ -689,6 +691,12 @@ class _TreatmentsTab extends _BasePatientTab<Treatment> {
   @override
   Widget buildItemCard(BuildContext context, Treatment treatment) {
     final appLocalizations = AppLocalizations.of(context)!;
+    final patientName = Provider.of<PatientProvider>(context, listen: false)
+        .patients
+        .firstWhere((p) => p.patientId == patientId,
+            orElse: () => Patient(name: '', fileNumber: ''))
+        .name;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
@@ -720,6 +728,15 @@ class _TreatmentsTab extends _BasePatientTab<Treatment> {
               },
             ),
           ],
+        ),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TreatmentDetailScreen(
+              treatment: treatment,
+              patientName: patientName,
+            ),
+          ),
         ),
       ),
     );
@@ -764,7 +781,25 @@ class _InvoicesTab extends _BasePatientTab<Invoice> {
             },
           );
 
-    return content;
+    return Stack(
+      children: [
+        content,
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton(
+            heroTag: 'invoice_fab_$patientId',
+            child: const Icon(Icons.add),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => InvoiceFormScreen(patientId: patientId),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
