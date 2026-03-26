@@ -1,10 +1,15 @@
 import 'package:clinc/screens/treatment_form_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
+import '../models/patient.dart';
+import '../models/patient_xray.dart';
 import '../providers/patient_provider.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/invoice_provider.dart';
+import '../repositories/patient_xray_repository.dart';
+import '../services/xray_storage_service.dart';
 import 'patient_form_screen.dart';
 import 'appointment_form_screen.dart';
 import 'invoice_form_screen.dart';
@@ -139,6 +144,11 @@ class DashboardScreen extends StatelessWidget {
                               );
                             },
                           ),
+                          QuickActionButton(
+                            icon: Icons.add_photo_alternate_outlined,
+                            label: 'Add X-Ray',
+                            onPressed: () => _addXRayQuickAction(context),
+                          ),
                         ],
                       ),
                     ],
@@ -200,6 +210,92 @@ class DashboardCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+Future<void> _addXRayQuickAction(BuildContext context) async {
+  final patient = await showDialog<Patient>(
+    context: context,
+    builder: (_) => const _PatientPickerDialog(),
+  );
+  if (patient == null || !context.mounted) return;
+
+  final picker = ImagePicker();
+  final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+  if (file == null || !context.mounted) return;
+
+  try {
+    final embedded = await XRayStorageService.importImage(file.path);
+    if (embedded == null) return;
+    await PatientXrayRepository().insertPatientXray(PatientXray(
+      patientId: patient.patientId!,
+      imagePath: embedded,
+      createdAt: DateTime.now().toIso8601String(),
+    ));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('X-Ray added for ${patient.name}')),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+}
+
+class _PatientPickerDialog extends StatefulWidget {
+  const _PatientPickerDialog();
+
+  @override
+  State<_PatientPickerDialog> createState() => _PatientPickerDialogState();
+}
+
+class _PatientPickerDialogState extends State<_PatientPickerDialog> {
+  Patient? _selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final patients =
+        Provider.of<PatientProvider>(context, listen: false).patients;
+    return AlertDialog(
+      title: const Text('Select Patient'),
+      content: SizedBox(
+        width: 300,
+        child: Autocomplete<Patient>(
+          displayStringForOption: (p) => p.name,
+          optionsBuilder: (value) {
+            if (value.text.isEmpty) return patients;
+            return patients.where((p) =>
+                p.name.toLowerCase().contains(value.text.toLowerCase()) ||
+                p.fileNumber.contains(value.text));
+          },
+          onSelected: (p) => setState(() => _selected = p),
+          fieldViewBuilder: (context, controller, focusNode, onSubmit) =>
+              TextField(
+            controller: controller,
+            focusNode: focusNode,
+            decoration: const InputDecoration(
+              hintText: 'Search patient...',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.search),
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
+        TextButton(
+          onPressed:
+              _selected == null ? null : () => Navigator.pop(context, _selected),
+          child: const Text('Select'),
+        ),
+      ],
     );
   }
 }
