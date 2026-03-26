@@ -59,6 +59,14 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         foregroundColor: Theme.of(context).textTheme.titleLarge?.color,
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const InvoiceFormScreen()),
+        ),
+        tooltip: 'Add Invoice',
+        child: const Icon(Icons.add),
+      ),
       body: Consumer2<InvoiceProvider, PatientProvider>(
         builder: (context, invoiceProvider, patientProvider, child) {
           if (invoiceProvider.isLoading || patientProvider.isLoading) {
