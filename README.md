@@ -1,67 +1,119 @@
-# Medical Appointment Management (Clinc)
+# Clinc – Dental Clinic Management Software
 
-A comprehensive Windows desktop application built with Flutter for managing medical appointments, patients, clinics, and more. It includes a native Python integration for AI-powered Dental X-Ray Analysis using a lightweight ONNX model.
+A cross-platform desktop application built with Flutter for managing dental clinic operations. Supports Windows, macOS, and Linux.
 
 ## Features
-- **Patient Management**: Add, view, and manage patient records.
-- **Appointment Scheduling**: Organize and track medical appointments.
-- **Invoicing**: Generate and manage billing for patients.
-- **AI X-Ray Analysis**: Automatically detect cavities (caries), impacted teeth, and periapical lesions using a built-in trained YOLOv8 ONNX AI model.
+
+- **Patient Management** — Add, edit, and search patient records with file numbers, contact details, and visit history.
+- **Appointment Scheduling** — Visual calendar with color-coded appointment statuses (Booked, Completed, Cancelled, No Show).
+- **Treatment Records** — Track diagnoses, tooth numbers, agreed amounts, and treatment progress per patient.
+- **Invoicing & Payments** — Generate invoices linked to treatments, record partial or full payments, and export PDF invoices.
+- **X-Ray Gallery** — Attach and view X-ray images directly within patient records.
+- **Expenses Tracking** — Log and categorize clinic expenses with financial summaries.
+- **Reports & Dashboard** — Overview of daily appointments, revenue, outstanding invoices, and expense breakdown charts.
+- **Encrypted Backup** — Automatic and manual AES-256 encrypted backups using the login password. Configurable backup location, frequency, and retention period.
+- **Password Protection** — App-level password with SQLCipher database encryption.
+- **Arabic & English** — Full RTL/LTR localization support.
 
 ---
 
-## 🚀 Getting Started
+## Prerequisites
 
-To run this project on your local machine, you will need to set up both the **Flutter** frontend and the **Python** backend environment for the AI.
-
-### Prerequisites
-1. **Flutter SDK** (Version 3.19.0 or higher) - [Install Flutter](https://docs.flutter.dev/get-started/install)
-2. **Python** (Version 3.10 or higher) - [Install Python](https://www.python.org/downloads/)
-3. **Visual Studio** (with "Desktop development with C++" workload for Flutter Windows compilation)
-
-### 1. Set Up the Python AI Environment
-The X-Ray analysis feature runs locally on your machine using Python and ONNX Runtime. You must configure the Python environment before running the app.
-
-1. Open your terminal and navigate to the `python_module` directory inside the project:
-   ```bash
-   cd python_module
-   ```
-2. Create a virtual environment (recommended):
-   ```bash
-   python -m venv .venv
-   ```
-3. Activate the virtual environment:
-   * **Windows (Command Prompt):** `.venv\Scripts\activate.bat`
-   * **Windows (PowerShell):** `.\.venv\Scripts\Activate.ps1`
-4. Install the required lightweight dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-   *(This installs `onnxruntime`, `numpy`, and `opencv-python-headless`)*
-
-### 2. Set Up the Flutter App
-Once the Python environment is ready, you can build and run the Flutter application.
-
-1. Open a new terminal at the root of the project (`clinc` directory).
-2. Install the Flutter dependencies:
-   ```bash
-   flutter pub get
-   ```
-3. Run the application on Windows:
-   ```bash
-   flutter run -d windows
-   ```
+- **Flutter SDK** 3.19.0 or higher — [Install Flutter](https://docs.flutter.dev/get-started/install)
+- **Dart SDK** is bundled with Flutter — no separate install needed
+- Platform-specific toolchain (see per-platform sections below)
 
 ---
 
-## 🧠 How the AI X-Ray Analyzer Works
-The project uses a custom-trained YOLOv8 model that has been exported to the `.onnx` format (`best.onnx`). 
+## Getting Started
 
-When a user uploads an X-Ray image in the Flutter app, the app executes `python_module/xray_analyzer.py`. This script uses `onnxruntime` to process the image entirely on the CPU without requiring heavy libraries like PyTorch or a dedicated GPU. The script returns a JSON response containing the findings, bounding box coordinates, and a drawn annotated image which Flutter then displays to the user.
+```bash
+# Clone the repository
+git clone https://github.com/hsh1994-ux/Dental-Clinic-Management-Software.git
+cd Dental-Clinic-Management-Software
 
-## 🛠️ Built With
-* [Flutter](https://flutter.dev/) - UI Framework
-* [Dart](https://dart.dev/) - Frontend Language
-* [Python](https://www.python.org/) - AI Scripting
-* [ONNX Runtime](https://onnxruntime.ai/) - AI Inference Engine
-* [OpenCV](https://opencv.org/) - Image Processing
+# Install Flutter dependencies
+flutter pub get
+```
+
+---
+
+## Running in Development
+
+```bash
+# macOS
+flutter run -d macos
+
+# Windows
+flutter run -d windows
+
+# Linux
+flutter run -d linux
+```
+
+---
+
+## Building for Production
+
+### macOS
+
+**Requirements:** Xcode 14+ and CocoaPods installed.
+
+```bash
+# Ensure Flutter build artifacts are fully cached (required for release builds)
+flutter precache --force --universal
+
+# Install CocoaPods dependencies
+cd macos && pod install && cd ..
+
+# Build release app bundle
+flutter build macos --release
+```
+
+Output: `build/macos/Build/Products/Release/clinc.app`
+
+To distribute outside the App Store, open the `.app` in Finder and verify it runs. For notarization, use Xcode's Organizer or `xcrun notarytool`.
+
+---
+
+### Windows
+
+**Requirements:** Visual Studio 2022 with the **Desktop development with C++** workload installed.
+
+```bash
+flutter build windows --release
+```
+
+Output: `build\windows\x64\runner\Release\`
+
+The output folder contains the `.exe` and all required DLLs. Copy the entire folder to distribute, or wrap it with an installer tool such as [Inno Setup](https://jrsoftware.org/isinfo.php).
+
+---
+
+### Linux
+
+**Requirements:** The following packages must be installed:
+
+```bash
+sudo apt-get install clang cmake ninja-build pkg-config \
+  libgtk-3-dev liblzma-dev libstdc++-12-dev
+```
+
+```bash
+flutter build linux --release
+```
+
+Output: `build/linux/x64/release/bundle/`
+
+The output bundle folder is self-contained. Copy it to distribute, or package it as a `.deb` or `.AppImage` using your preferred tool.
+
+---
+
+## Built With
+
+- [Flutter](https://flutter.dev/) — UI framework
+- [Dart](https://dart.dev/) — Language
+- [SQLite + SQLCipher](https://www.zetetic.net/sqlcipher/) — Encrypted local database
+- [fl_chart](https://pub.dev/packages/fl_chart) — Charts and graphs
+- [table_calendar](https://pub.dev/packages/table_calendar) — Calendar widget
+- [encrypt](https://pub.dev/packages/encrypt) — AES-256 backup encryption
