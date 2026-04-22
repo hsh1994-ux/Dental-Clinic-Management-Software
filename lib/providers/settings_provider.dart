@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/file_preferences.dart';
 
 class SettingsProvider with ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.light;
@@ -27,7 +27,7 @@ class SettingsProvider with ChangeNotifier {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await FilePreferences.getInstance();
     final themeIndex = prefs.getInt('themeMode') ?? 0;
     _themeMode = ThemeMode.values[themeIndex];
 
@@ -48,7 +48,7 @@ class SettingsProvider with ChangeNotifier {
 
   Future<void> updateLastBackupTime() async {
     _lastBackupTime = DateTime.now();
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await FilePreferences.getInstance();
     await prefs.setInt(
         'lastBackupTimestamp', _lastBackupTime!.millisecondsSinceEpoch);
     notifyListeners();
@@ -56,21 +56,21 @@ class SettingsProvider with ChangeNotifier {
 
   Future<void> setBackupRetentionDays(int days) async {
     _backupRetentionDays = days;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await FilePreferences.getInstance();
     await prefs.setInt('backupRetentionDays', days);
     notifyListeners();
   }
 
   Future<void> setAutoBackupIntervalHours(int hours) async {
     _autoBackupIntervalHours = hours;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await FilePreferences.getInstance();
     await prefs.setInt('autoBackupIntervalHours', hours);
     notifyListeners();
   }
 
   Future<void> setBackupLocation(String? path) async {
     _backupLocation = path;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await FilePreferences.getInstance();
     if (path != null) {
       await prefs.setString('backupLocation', path);
     } else {
@@ -81,14 +81,14 @@ class SettingsProvider with ChangeNotifier {
 
   Future<void> toggleTheme(bool isDarkMode) async {
     _themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await FilePreferences.getInstance();
     await prefs.setInt('themeMode', _themeMode.index);
     notifyListeners();
   }
 
   Future<void> setLanguage(String languageCode) async {
     _locale = Locale(languageCode);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await FilePreferences.getInstance();
     await prefs.setString('languageCode', languageCode);
     notifyListeners();
   }

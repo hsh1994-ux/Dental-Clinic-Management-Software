@@ -1805,7 +1805,7 @@ abstract class AppLocalizations {
   /// No description provided for @defaultBackupLocation.
   ///
   /// In ar, this message translates to:
-  /// **'افتراضي (المستندات/ClinC Backups)'**
+  /// **'افتراضي (دعم التطبيق/ClinC Backups)'**
   String get defaultBackupLocation;
 
   /// No description provided for @autoBackupSuccess.

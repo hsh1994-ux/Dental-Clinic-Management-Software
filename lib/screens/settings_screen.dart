@@ -162,8 +162,8 @@ class SettingsScreen extends StatelessWidget {
     if (settingsProvider.backupLocation != null) {
       return settingsProvider.backupLocation!;
     }
-    final docsDir = await getApplicationDocumentsDirectory();
-    return path.join(docsDir.path, 'ClinC Backups');
+    final supportDir = await getApplicationSupportDirectory();
+    return path.join(supportDir.path, 'ClinC Backups');
   }
 
   void _changeBackupLocation(BuildContext context) async {

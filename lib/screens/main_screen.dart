@@ -49,7 +49,7 @@ class _MainScreenState extends State<MainScreen> {
 
     final dirPath = settingsProvider.backupLocation ??
         path.join(
-            (await getApplicationDocumentsDirectory()).path, 'ClinC Backups');
+            (await getApplicationSupportDirectory()).path, 'ClinC Backups');
 
     final savedPath = await BackupService().backupToDirectory(
       dirPath,

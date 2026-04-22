@@ -298,7 +298,7 @@
   "backupNowSubtitle": "إنشاء نسخة احتياطية مشفرة في الموقع المحدد",
   "backupInProgress": "جاري إنشاء النسخة الاحتياطية...",
   "backupSavedAt": "تم حفظ النسخة الاحتياطية في:",
-  "defaultBackupLocation": "افتراضي (المستندات/ClinC Backups)",
+  "defaultBackupLocation": "افتراضي (دعم التطبيق/ClinC Backups)",
   "autoBackupSuccess": "تم إنشاء النسخة الاحتياطية التلقائية بنجاح",
   "autoBackupFailed": "فشل النسخ الاحتياطي التلقائي — تحقق من موقع النسخ الاحتياطي في الإعدادات",
   "backupRetentionTitle": "الاحتفاظ بالنسخ الاحتياطية لمدة",

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/file_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/laboratory_provider.dart';
 import '../models/laboratory_item.dart';
@@ -41,7 +41,7 @@ class _LaboratoryScreenState extends State<LaboratoryScreen> {
   }
 
   Future<void> _loadHiddenItemIds() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await FilePreferences.getInstance();
     setState(() {
       _hiddenItemIds = (prefs.getStringList('hiddenLabItems') ?? []).toSet();
     });
@@ -80,7 +80,7 @@ class _LaboratoryScreenState extends State<LaboratoryScreen> {
                 final fileName = 'laboratory_${DateTime.now().millisecondsSinceEpoch}';
                 await PdfLaboratoryService.savePdf(fileName, pdfBytes);
 
-                final prefs = await SharedPreferences.getInstance();
+                final prefs = await FilePreferences.getInstance();
                 final idsToHide = provider.selectedItems
                     .map((item) => item.treatment.treatmentId.toString())
                     .toList();

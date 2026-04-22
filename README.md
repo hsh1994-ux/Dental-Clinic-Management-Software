@@ -74,6 +74,19 @@ Output: `build/macos/Build/Products/Release/clinc.app`
 
 To distribute outside the App Store, open the `.app` in Finder and verify it runs. For notarization, use Xcode's Organizer or `xcrun notarytool`.
 
+**Note — Data storage:** The app stores its database and settings in a `ClinC Data/` folder created automatically on first launch. The layout is the same across all platforms — `ClinC Data/` always appears next to the app or its containing folder:
+
+**macOS**
+```
+📁 Your chosen location
+  ├── clinc.app
+  └── ClinC Data/
+        ├── clinc_database.db
+        └── settings.json
+```
+
+To move to a new machine: on macOS copy both `clinc.app` and `ClinC Data/` together; on Windows and Linux copy the entire distribution folder. The app can be placed anywhere — Desktop, home folder, or a dedicated clinic folder. Installing in `/Applications/` on macOS is not recommended as that directory is read-only for standard users.
+
 ---
 
 ### Windows
@@ -87,6 +100,16 @@ flutter build windows --release
 Output: `build\windows\x64\runner\Release\`
 
 The output folder contains the `.exe` and all required DLLs. Copy the entire folder to distribute, or wrap it with an installer tool such as [Inno Setup](https://jrsoftware.org/isinfo.php).
+
+**Windows**
+```
+📁 Release\
+  ├── clinc.exe
+  ├── *.dll
+  └── ClinC Data\
+        ├── clinc_database.db
+        └── settings.json
+```
 
 ---
 
@@ -106,6 +129,16 @@ flutter build linux --release
 Output: `build/linux/x64/release/bundle/`
 
 The output bundle folder is self-contained. Copy it to distribute, or package it as a `.deb` or `.AppImage` using your preferred tool.
+
+**Linux**
+```
+📁 bundle/
+  ├── clinc
+  ├── lib/
+  └── ClinC Data/
+        ├── clinc_database.db
+        └── settings.json
+```
 
 ---
 

@@ -11,6 +11,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:crypto/crypto.dart' as crypto;
 import 'dart:typed_data';
+import 'app_storage.dart';
 import 'encryption_service.dart';
 import 'xray_storage_service.dart';
 
@@ -66,7 +67,8 @@ class DatabaseService {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'clinc_database.db');
+    await AppStorage.ensureDataDirExists();
+    String path = AppStorage.dbPath;
     return await openDatabase(
       path,
       version: 5,
@@ -249,13 +251,10 @@ class DatabaseService {
 
   // ─── SQLCipher lifecycle methods ───
 
-  Future<String> get _databasePath async {
-    return join(await getDatabasesPath(), 'clinc_database.db');
-  }
+  Future<String> get _databasePath async => AppStorage.dbPath;
 
-  Future<String> get _encryptedDatabasePath async {
-    return join(await getDatabasesPath(), 'clinc_database.db.enc');
-  }
+  Future<String> get _encryptedDatabasePath async =>
+      join(AppStorage.dataDir, 'clinc_database.db.enc');
 
   /// Closes the database and nulls the singleton reference.
   Future<void> closeDatabase() async {

@@ -298,7 +298,7 @@
   "backupNowSubtitle": "Create an encrypted backup in the configured location",
   "backupInProgress": "Creating backup...",
   "backupSavedAt": "Backup saved to:",
-  "defaultBackupLocation": "Default (Documents/ClinC Backups)",
+  "defaultBackupLocation": "Default (App Support/ClinC Backups)",
   "autoBackupSuccess": "Auto backup created successfully",
   "autoBackupFailed": "Auto backup failed — check backup location in Settings",
   "backupRetentionTitle": "Keep Backups For",

@@ -882,7 +882,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupSavedAt => 'Backup saved to:';
 
   @override
-  String get defaultBackupLocation => 'Default (Documents/ClinC Backups)';
+  String get defaultBackupLocation => 'Default (App Support/ClinC Backups)';
 
   @override
   String get autoBackupSuccess => 'Auto backup created successfully';

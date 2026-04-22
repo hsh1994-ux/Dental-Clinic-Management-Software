@@ -879,7 +879,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get backupSavedAt => 'تم حفظ النسخة الاحتياطية في:';
 
   @override
-  String get defaultBackupLocation => 'افتراضي (المستندات/ClinC Backups)';
+  String get defaultBackupLocation => 'افتراضي (دعم التطبيق/ClinC Backups)';
 
   @override
   String get autoBackupSuccess => 'تم إنشاء النسخة الاحتياطية التلقائية بنجاح';
