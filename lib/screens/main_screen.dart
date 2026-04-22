@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:clinc/providers/appointment_provider.dart';
 import 'package:clinc/providers/expense_provider.dart';
 import 'package:clinc/providers/invoice_provider.dart';
@@ -14,11 +12,9 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/database_service.dart';
-import '../widgets/password_dialog.dart';
 import 'appointments_screen.dart';
 import 'dashboard_screen.dart';
 import 'invoices_screen.dart';
@@ -76,34 +72,6 @@ class _MainScreenState extends State<MainScreen> {
         ),
       );
     }
-  }
-
-  Future<void> _checkPassword() async {
-    final appDirectory = Directory(Platform.resolvedExecutable).parent.path;
-    final passwordFlagFile = File('$appDirectory/.password_set');
-
-    final bool passwordAlreadySet = await passwordFlagFile.exists();
-
-    if (!passwordAlreadySet) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showPasswordDialog(passwordFlagFile);
-      });
-    }
-  }
-
-  void _showPasswordDialog(File passwordFlagFile) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return PasswordDialog(
-          onPasswordCorrect: () async {
-            await passwordFlagFile.create();
-            Navigator.of(context).pop();
-          },
-        );
-      },
-    );
   }
 
   static const List<Widget> _screens = <Widget>[
