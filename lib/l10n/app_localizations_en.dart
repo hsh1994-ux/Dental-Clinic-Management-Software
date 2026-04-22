@@ -855,4 +855,74 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wrongBackupPassword => 'Wrong backup password. Please try again.';
+
+  @override
+  String get backup => 'Backup';
+
+  @override
+  String get backupLocation => 'Backup Location';
+
+  @override
+  String get backupLocationSubtitle => 'Backup files are saved to this folder';
+
+  @override
+  String get selectBackupDirectory => 'Select Backup Folder';
+
+  @override
+  String get backupNow => 'Backup Now';
+
+  @override
+  String get backupNowSubtitle =>
+      'Create an encrypted backup in the configured location';
+
+  @override
+  String get backupInProgress => 'Creating backup...';
+
+  @override
+  String get backupSavedAt => 'Backup saved to:';
+
+  @override
+  String get defaultBackupLocation => 'Default (Documents/ClinC Backups)';
+
+  @override
+  String get autoBackupSuccess => 'Auto backup created successfully';
+
+  @override
+  String get autoBackupFailed =>
+      'Auto backup failed — check backup location in Settings';
+
+  @override
+  String get backupRetentionTitle => 'Keep Backups For';
+
+  @override
+  String get backupRetentionSubtitle =>
+      'Backups older than this are automatically deleted';
+
+  @override
+  String get autoBackupFrequencyTitle => 'Auto-backup Frequency';
+
+  @override
+  String get autoBackupFrequencySubtitle =>
+      'How often to run automatic backups';
+
+  @override
+  String get day => 'day';
+
+  @override
+  String get days => 'days';
+
+  @override
+  String get every6Hours => 'Every 6 hours';
+
+  @override
+  String get every12Hours => 'Every 12 hours';
+
+  @override
+  String get daily => 'Daily';
+
+  @override
+  String get every2Days => 'Every 2 days';
+
+  @override
+  String get weekly => 'Weekly';
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
@@ -20,72 +21,6 @@ import '../services/random_data_generator.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  void _exportData(BuildContext context) async {
-    final appLocalizations = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(appLocalizations.exportingData)));
-
-    try {
-      if (Platform.isAndroid || Platform.isIOS) {
-        var status = await Permission.storage.status;
-        if (!status.isGranted) {
-          status = await Permission.storage.request();
-        }
-        if (!status.isGranted) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                  content: Text(appLocalizations.storagePermissionRequired)),
-            );
-          return;
-        }
-      }
-
-      final String? outputDirectory =
-          await FilePicker.platform.getDirectoryPath(
-        dialogTitle: appLocalizations.selectExportDirectory,
-      );
-
-      if (outputDirectory == null) {
-        // User canceled the picker
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        return;
-      }
-
-      final backupService = BackupService();
-      final tempFilePath = await backupService.exportData();
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-      if (tempFilePath != null) {
-        final tempFile = File(tempFilePath);
-        final fileName = path.basename(tempFile.path);
-        final newPath = path.join(outputDirectory, fileName);
-
-        await tempFile.copy(newPath);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${appLocalizations.exportSuccessful} $newPath'),
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(appLocalizations.backupFailed)),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text('${appLocalizations.backupFailed}: $e')),
-        );
-    }
-  }
 
   void _importData(BuildContext context) async {
     final appLocalizations = AppLocalizations.of(context)!;
@@ -221,6 +156,91 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  Future<String> _resolveBackupDirectory(BuildContext context) async {
+    final settingsProvider =
+        Provider.of<SettingsProvider>(context, listen: false);
+    if (settingsProvider.backupLocation != null) {
+      return settingsProvider.backupLocation!;
+    }
+    final docsDir = await getApplicationDocumentsDirectory();
+    return path.join(docsDir.path, 'ClinC Backups');
+  }
+
+  void _changeBackupLocation(BuildContext context) async {
+    final appLocalizations = AppLocalizations.of(context)!;
+
+    if (Platform.isAndroid || Platform.isIOS) {
+      var status = await Permission.storage.status;
+      if (!status.isGranted) {
+        status = await Permission.storage.request();
+      }
+      if (!status.isGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(appLocalizations.storagePermissionRequired)),
+        );
+        return;
+      }
+    }
+
+    final String? selectedDir = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: appLocalizations.selectBackupDirectory,
+    );
+
+    if (selectedDir == null) return;
+    if (!context.mounted) return;
+
+    await Provider.of<SettingsProvider>(context, listen: false)
+        .setBackupLocation(selectedDir);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${appLocalizations.backupLocation}: $selectedDir')),
+    );
+  }
+
+  void _backupNow(BuildContext context) async {
+    final appLocalizations = AppLocalizations.of(context)!;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(appLocalizations.backupInProgress)));
+
+    try {
+      final dirPath = await _resolveBackupDirectory(context);
+      final retentionDays =
+          Provider.of<SettingsProvider>(context, listen: false)
+              .backupRetentionDays;
+      final backupService = BackupService();
+      final savedPath = await backupService.backupToDirectory(dirPath,
+          retentionDays: retentionDays);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (savedPath != null) {
+        final settings = Provider.of<SettingsProvider>(context, listen: false);
+        await settings.updateLastBackupTime();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${appLocalizations.backupSavedAt} $savedPath'),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(appLocalizations.backupFailed)),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('${appLocalizations.backupFailed}: $e')),
+        );
+    }
+  }
+
   void _resetApp(BuildContext context) async {
     final appLocalizations = AppLocalizations.of(context)!;
 
@@ -337,34 +357,113 @@ class SettingsScreen extends StatelessWidget {
               _buildSectionTitle(context, appLocalizations.dataManagement),
               const SizedBox(height: 8),
               Card(
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.upload_file_outlined),
-                      title: Text(appLocalizations.exportData),
-                      subtitle: Text(appLocalizations.exportDataSubtitle),
-                      onTap: () => _exportData(context),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.download_for_offline_outlined),
-                      title: Text(appLocalizations.importData),
-                      subtitle: Text(appLocalizations.importDataSubtitle),
-                      onTap: () => _importData(context),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: Icon(Icons.delete_forever_outlined,
-                          color: Theme.of(context).colorScheme.error),
-                      title: Text(
-                        appLocalizations.resetApp,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.error),
-                      ),
-                      subtitle: Text(appLocalizations.resetAppSubtitle),
-                      onTap: () => _resetApp(context),
-                    ),
-                  ],
+                child: Consumer<SettingsProvider>(
+                  builder: (context, settingsProvider, child) {
+                    final locationDisplay = settingsProvider.backupLocation ??
+                        appLocalizations.defaultBackupLocation;
+
+                    final retentionOptions = [1, 3, 7, 14, 30];
+                    final frequencyOptions = [6, 12, 24, 48, 168];
+
+                    String retentionLabel(int d) => d == 1
+                        ? '1 ${appLocalizations.day}'
+                        : '$d ${appLocalizations.days}';
+
+                    String frequencyLabel(int h) {
+                      switch (h) {
+                        case 6:
+                          return appLocalizations.every6Hours;
+                        case 12:
+                          return appLocalizations.every12Hours;
+                        case 24:
+                          return appLocalizations.daily;
+                        case 48:
+                          return appLocalizations.every2Days;
+                        case 168:
+                          return appLocalizations.weekly;
+                        default:
+                          return '$h h';
+                      }
+                    }
+
+                    return Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.folder_outlined),
+                          title: Text(appLocalizations.backupLocation),
+                          subtitle: Text(locationDisplay,
+                              overflow: TextOverflow.ellipsis),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => _changeBackupLocation(context),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.history_outlined),
+                          title: Text(appLocalizations.backupRetentionTitle),
+                          subtitle:
+                              Text(appLocalizations.backupRetentionSubtitle),
+                          trailing: DropdownButton<int>(
+                            value: settingsProvider.backupRetentionDays,
+                            underline: const SizedBox.shrink(),
+                            onChanged: (v) {
+                              if (v != null)
+                                settingsProvider.setBackupRetentionDays(v);
+                            },
+                            items: retentionOptions
+                                .map((d) => DropdownMenuItem(
+                                    value: d, child: Text(retentionLabel(d))))
+                                .toList(),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.schedule_outlined),
+                          title:
+                              Text(appLocalizations.autoBackupFrequencyTitle),
+                          subtitle: Text(
+                              appLocalizations.autoBackupFrequencySubtitle),
+                          trailing: DropdownButton<int>(
+                            value: settingsProvider.autoBackupIntervalHours,
+                            underline: const SizedBox.shrink(),
+                            onChanged: (v) {
+                              if (v != null)
+                                settingsProvider.setAutoBackupIntervalHours(v);
+                            },
+                            items: frequencyOptions
+                                .map((h) => DropdownMenuItem(
+                                    value: h, child: Text(frequencyLabel(h))))
+                                .toList(),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.backup_outlined),
+                          title: Text(appLocalizations.backupNow),
+                          subtitle: Text(appLocalizations.backupNowSubtitle),
+                          onTap: () => _backupNow(context),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.download_for_offline_outlined),
+                          title: Text(appLocalizations.importData),
+                          subtitle: Text(appLocalizations.importDataSubtitle),
+                          onTap: () => _importData(context),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: Icon(Icons.delete_forever_outlined,
+                              color: Theme.of(context).colorScheme.error),
+                          title: Text(
+                            appLocalizations.resetApp,
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.error),
+                          ),
+                          subtitle: Text(appLocalizations.resetAppSubtitle),
+                          onTap: () => _resetApp(context),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 24),

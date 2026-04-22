@@ -1753,6 +1753,138 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'كلمة مرور النسخة الاحتياطية خاطئة. يرجى المحاولة مرة أخرى.'**
   String get wrongBackupPassword;
+
+  /// No description provided for @backup.
+  ///
+  /// In ar, this message translates to:
+  /// **'النسخ الاحتياطي'**
+  String get backup;
+
+  /// No description provided for @backupLocation.
+  ///
+  /// In ar, this message translates to:
+  /// **'موقع النسخ الاحتياطي'**
+  String get backupLocation;
+
+  /// No description provided for @backupLocationSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'يتم حفظ ملفات النسخ الاحتياطي في هذا المجلد'**
+  String get backupLocationSubtitle;
+
+  /// No description provided for @selectBackupDirectory.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختر مجلد النسخ الاحتياطي'**
+  String get selectBackupDirectory;
+
+  /// No description provided for @backupNow.
+  ///
+  /// In ar, this message translates to:
+  /// **'نسخ احتياطي الآن'**
+  String get backupNow;
+
+  /// No description provided for @backupNowSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'إنشاء نسخة احتياطية مشفرة في الموقع المحدد'**
+  String get backupNowSubtitle;
+
+  /// No description provided for @backupInProgress.
+  ///
+  /// In ar, this message translates to:
+  /// **'جاري إنشاء النسخة الاحتياطية...'**
+  String get backupInProgress;
+
+  /// No description provided for @backupSavedAt.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم حفظ النسخة الاحتياطية في:'**
+  String get backupSavedAt;
+
+  /// No description provided for @defaultBackupLocation.
+  ///
+  /// In ar, this message translates to:
+  /// **'افتراضي (المستندات/ClinC Backups)'**
+  String get defaultBackupLocation;
+
+  /// No description provided for @autoBackupSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إنشاء النسخة الاحتياطية التلقائية بنجاح'**
+  String get autoBackupSuccess;
+
+  /// No description provided for @autoBackupFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل النسخ الاحتياطي التلقائي — تحقق من موقع النسخ الاحتياطي في الإعدادات'**
+  String get autoBackupFailed;
+
+  /// No description provided for @backupRetentionTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'الاحتفاظ بالنسخ الاحتياطية لمدة'**
+  String get backupRetentionTitle;
+
+  /// No description provided for @backupRetentionSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'يتم حذف النسخ الاحتياطية الأقدم من هذا تلقائياً'**
+  String get backupRetentionSubtitle;
+
+  /// No description provided for @autoBackupFrequencyTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'تكرار النسخ الاحتياطي التلقائي'**
+  String get autoBackupFrequencyTitle;
+
+  /// No description provided for @autoBackupFrequencySubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'كم مرة يتم إنشاء نسخ احتياطية تلقائية'**
+  String get autoBackupFrequencySubtitle;
+
+  /// No description provided for @day.
+  ///
+  /// In ar, this message translates to:
+  /// **'يوم'**
+  String get day;
+
+  /// No description provided for @days.
+  ///
+  /// In ar, this message translates to:
+  /// **'أيام'**
+  String get days;
+
+  /// No description provided for @every6Hours.
+  ///
+  /// In ar, this message translates to:
+  /// **'كل 6 ساعات'**
+  String get every6Hours;
+
+  /// No description provided for @every12Hours.
+  ///
+  /// In ar, this message translates to:
+  /// **'كل 12 ساعة'**
+  String get every12Hours;
+
+  /// No description provided for @daily.
+  ///
+  /// In ar, this message translates to:
+  /// **'يومياً'**
+  String get daily;
+
+  /// No description provided for @every2Days.
+  ///
+  /// In ar, this message translates to:
+  /// **'كل يومين'**
+  String get every2Days;
+
+  /// No description provided for @weekly.
+  ///
+  /// In ar, this message translates to:
+  /// **'أسبوعياً'**
+  String get weekly;
 }
 
 class _AppLocalizationsDelegate

@@ -852,4 +852,74 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get wrongBackupPassword =>
       'كلمة مرور النسخة الاحتياطية خاطئة. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get backup => 'النسخ الاحتياطي';
+
+  @override
+  String get backupLocation => 'موقع النسخ الاحتياطي';
+
+  @override
+  String get backupLocationSubtitle =>
+      'يتم حفظ ملفات النسخ الاحتياطي في هذا المجلد';
+
+  @override
+  String get selectBackupDirectory => 'اختر مجلد النسخ الاحتياطي';
+
+  @override
+  String get backupNow => 'نسخ احتياطي الآن';
+
+  @override
+  String get backupNowSubtitle => 'إنشاء نسخة احتياطية مشفرة في الموقع المحدد';
+
+  @override
+  String get backupInProgress => 'جاري إنشاء النسخة الاحتياطية...';
+
+  @override
+  String get backupSavedAt => 'تم حفظ النسخة الاحتياطية في:';
+
+  @override
+  String get defaultBackupLocation => 'افتراضي (المستندات/ClinC Backups)';
+
+  @override
+  String get autoBackupSuccess => 'تم إنشاء النسخة الاحتياطية التلقائية بنجاح';
+
+  @override
+  String get autoBackupFailed =>
+      'فشل النسخ الاحتياطي التلقائي — تحقق من موقع النسخ الاحتياطي في الإعدادات';
+
+  @override
+  String get backupRetentionTitle => 'الاحتفاظ بالنسخ الاحتياطية لمدة';
+
+  @override
+  String get backupRetentionSubtitle =>
+      'يتم حذف النسخ الاحتياطية الأقدم من هذا تلقائياً';
+
+  @override
+  String get autoBackupFrequencyTitle => 'تكرار النسخ الاحتياطي التلقائي';
+
+  @override
+  String get autoBackupFrequencySubtitle =>
+      'كم مرة يتم إنشاء نسخ احتياطية تلقائية';
+
+  @override
+  String get day => 'يوم';
+
+  @override
+  String get days => 'أيام';
+
+  @override
+  String get every6Hours => 'كل 6 ساعات';
+
+  @override
+  String get every12Hours => 'كل 12 ساعة';
+
+  @override
+  String get daily => 'يومياً';
+
+  @override
+  String get every2Days => 'كل يومين';
+
+  @override
+  String get weekly => 'أسبوعياً';
 }

@@ -681,6 +681,57 @@ class BackupService {
     }
   }
 
+  /// Backup to a specific directory using the current login password.
+  /// Deletes backups older than [retentionDays] after a successful backup.
+  /// Returns the full destination path, or null on failure.
+  Future<String?> backupToDirectory(String dirPath,
+      {int retentionDays = 7}) async {
+    try {
+      final tempPath = await exportData();
+      if (tempPath == null) return null;
+
+      final dir = Directory(dirPath);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+
+      final tempFile = File(tempPath);
+      final fileName = basename(tempFile.path);
+      final destPath = join(dirPath, fileName);
+      await tempFile.copy(destPath);
+      await tempFile.delete();
+
+      await _cleanupOldBackups(dirPath, retentionDays);
+
+      return destPath;
+    } catch (e) {
+      print('Backup to directory failed: $e');
+      return null;
+    }
+  }
+
+  /// Deletes .clinc backup files whose date (parsed from filename) is older
+  /// than [retentionDays] days. Filename format: clinc_backup_yyyy-MM-dd_HH-mm.clinc
+  Future<void> _cleanupOldBackups(String dirPath, int retentionDays) async {
+    final dir = Directory(dirPath);
+    if (!await dir.exists()) return;
+
+    final cutoff = DateTime.now().subtract(Duration(days: retentionDays));
+    final datePattern = RegExp(r'clinc_backup_(\d{4}-\d{2}-\d{2})_');
+
+    await for (final entity in dir.list()) {
+      if (entity is File && entity.path.endsWith('.clinc')) {
+        final match = datePattern.firstMatch(basename(entity.path));
+        if (match != null) {
+          final fileDate = DateTime.tryParse(match.group(1)!);
+          if (fileDate != null && fileDate.isBefore(cutoff)) {
+            await entity.delete();
+          }
+        }
+      }
+    }
+  }
+
   /// Constant-time comparison to prevent timing attacks on HMAC.
   bool _constantTimeEquals(List<int> a, List<int> b) {
     if (a.length != b.length) return false;

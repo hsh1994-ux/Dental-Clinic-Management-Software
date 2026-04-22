@@ -4,9 +4,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SettingsProvider with ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.light;
   Locale _locale = const Locale('en');
+  String? _backupLocation;
+  DateTime? _lastBackupTime;
+  int _backupRetentionDays = 7;
+  int _autoBackupIntervalHours = 24;
 
   ThemeMode get themeMode => _themeMode;
   Locale get locale => _locale;
+  String? get backupLocation => _backupLocation;
+  DateTime? get lastBackupTime => _lastBackupTime;
+  int get backupRetentionDays => _backupRetentionDays;
+  int get autoBackupIntervalHours => _autoBackupIntervalHours;
+
+  bool get shouldAutoBackup {
+    if (_lastBackupTime == null) return true;
+    return DateTime.now().difference(_lastBackupTime!) >
+        Duration(hours: _autoBackupIntervalHours);
+  }
 
   SettingsProvider() {
     _loadSettings();
@@ -20,6 +34,48 @@ class SettingsProvider with ChangeNotifier {
     final languageCode = prefs.getString('languageCode') ?? 'en';
     _locale = Locale(languageCode);
 
+    _backupLocation = prefs.getString('backupLocation');
+    _backupRetentionDays = prefs.getInt('backupRetentionDays') ?? 7;
+    _autoBackupIntervalHours = prefs.getInt('autoBackupIntervalHours') ?? 24;
+
+    final lastBackupMs = prefs.getInt('lastBackupTimestamp');
+    if (lastBackupMs != null) {
+      _lastBackupTime = DateTime.fromMillisecondsSinceEpoch(lastBackupMs);
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> updateLastBackupTime() async {
+    _lastBackupTime = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(
+        'lastBackupTimestamp', _lastBackupTime!.millisecondsSinceEpoch);
+    notifyListeners();
+  }
+
+  Future<void> setBackupRetentionDays(int days) async {
+    _backupRetentionDays = days;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('backupRetentionDays', days);
+    notifyListeners();
+  }
+
+  Future<void> setAutoBackupIntervalHours(int hours) async {
+    _autoBackupIntervalHours = hours;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('autoBackupIntervalHours', hours);
+    notifyListeners();
+  }
+
+  Future<void> setBackupLocation(String? path) async {
+    _backupLocation = path;
+    final prefs = await SharedPreferences.getInstance();
+    if (path != null) {
+      await prefs.setString('backupLocation', path);
+    } else {
+      await prefs.remove('backupLocation');
+    }
     notifyListeners();
   }
 

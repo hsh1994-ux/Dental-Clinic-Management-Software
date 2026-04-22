@@ -5,15 +5,19 @@ import 'package:clinc/providers/expense_provider.dart';
 import 'package:clinc/providers/invoice_provider.dart';
 import 'package:clinc/providers/laboratory_provider.dart';
 import 'package:clinc/providers/patient_provider.dart';
+import 'package:clinc/providers/settings_provider.dart';
 import 'package:clinc/screens/expenses_screen.dart';
 import 'package:clinc/screens/reports_screen.dart';
 import 'package:clinc/screens/settings_screen.dart';
 import 'package:clinc/screens/laboratory_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/database_service.dart';
 import '../widgets/password_dialog.dart';
 import 'appointments_screen.dart';
 import 'dashboard_screen.dart';
@@ -33,7 +37,45 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-  //  _checkPassword();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _runAutoBackupIfNeeded());
+  }
+
+  Future<void> _runAutoBackupIfNeeded() async {
+    if (!mounted) return;
+    final settingsProvider =
+        Provider.of<SettingsProvider>(context, listen: false);
+
+    if (!settingsProvider.shouldAutoBackup) return;
+
+    final dirPath = settingsProvider.backupLocation ??
+        path.join(
+            (await getApplicationDocumentsDirectory()).path, 'ClinC Backups');
+
+    final savedPath = await BackupService().backupToDirectory(
+      dirPath,
+      retentionDays: settingsProvider.backupRetentionDays,
+    );
+
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    if (savedPath != null) {
+      await settingsProvider.updateLastBackupTime();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.autoBackupSuccess),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.autoBackupFailed),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   Future<void> _checkPassword() async {
