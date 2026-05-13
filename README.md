@@ -87,6 +87,19 @@ To distribute outside the App Store, open the `.app` in Finder and verify it run
 
 To move to a new machine: on macOS copy both `clinc.app` and `ClinC Data/` together; on Windows and Linux copy the entire distribution folder. The app can be placed anywhere — Desktop, home folder, or a dedicated clinic folder. Installing in `/Applications/` on macOS is not recommended as that directory is read-only for standard users.
 
+**Note — Test data X-ray images:** The test data generator (Settings → Development → Generate Test Data) assigns X-ray images to patients. For this to work in the release app, place the `x-ray_images` folder inside `ClinC Data/`:
+
+```
+ClinC Data/
+  ├── clinc_database.db
+  ├── settings.json
+  └── x-ray_images/
+        ├── 1/
+        └── 2/
+```
+
+Without this folder the generator still runs normally — patients, appointments, treatments, invoices, and expenses are all created; X-ray records are simply skipped.
+
 ---
 
 ### Windows

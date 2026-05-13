@@ -272,7 +272,6 @@ Each screen is a `StatefulWidget` or `StatelessWidget` that reads from providers
 | `pdf_invoice_service.dart` | Generates PDF invoices using the `pdf` package |
 | `pdf_laboratory_service.dart` | Generates PDF lab reports |
 | `xray_storage_service.dart` | Manages X-ray image file paths |
-| `xray_analysis_service.dart` | X-ray analysis integration |
 | `random_data_generator.dart` | Generates realistic test data (patients, appointments, etc.) |
 
 ---

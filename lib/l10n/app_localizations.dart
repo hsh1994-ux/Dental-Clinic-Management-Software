@@ -1256,12 +1256,6 @@ abstract class AppLocalizations {
   /// **'خطأ في تحميل الصورة'**
   String get errorLoadingImage;
 
-  /// No description provided for @annotatedImage.
-  ///
-  /// In ar, this message translates to:
-  /// **'صورة مشروحة'**
-  String get annotatedImage;
-
   /// No description provided for @patientExpenses.
   ///
   /// In ar, this message translates to:
@@ -1298,72 +1292,6 @@ abstract class AppLocalizations {
   /// **'كلمة المرور مطلوبة'**
   String get passwordRequired;
 
-  /// No description provided for @xRayAnalysisError.
-  ///
-  /// In ar, this message translates to:
-  /// **'خطأ في تحليل الأشعة السينية'**
-  String get xRayAnalysisError;
-
-  /// No description provided for @xRayAnalysisResults.
-  ///
-  /// In ar, this message translates to:
-  /// **'نتائج تحليل الأشعة السينية'**
-  String get xRayAnalysisResults;
-
-  /// No description provided for @analysisId.
-  ///
-  /// In ar, this message translates to:
-  /// **'معرف التحليل'**
-  String get analysisId;
-
-  /// No description provided for @analysisDate.
-  ///
-  /// In ar, this message translates to:
-  /// **'تاريخ التحليل'**
-  String get analysisDate;
-
-  /// No description provided for @imageQuality.
-  ///
-  /// In ar, this message translates to:
-  /// **'جودة الصورة'**
-  String get imageQuality;
-
-  /// No description provided for @findings.
-  ///
-  /// In ar, this message translates to:
-  /// **'النتائج'**
-  String get findings;
-
-  /// No description provided for @noSpecificFindingsDetected.
-  ///
-  /// In ar, this message translates to:
-  /// **'لم يتم الكشف عن نتائج محددة.'**
-  String get noSpecificFindingsDetected;
-
-  /// No description provided for @severity.
-  ///
-  /// In ar, this message translates to:
-  /// **'الخطورة'**
-  String get severity;
-
-  /// No description provided for @recommendation.
-  ///
-  /// In ar, this message translates to:
-  /// **'التوصية'**
-  String get recommendation;
-
-  /// No description provided for @medicalAdviceSummary.
-  ///
-  /// In ar, this message translates to:
-  /// **'ملخص النصيحة الطبية'**
-  String get medicalAdviceSummary;
-
-  /// No description provided for @noSummaryAvailable.
-  ///
-  /// In ar, this message translates to:
-  /// **'لا يوجد ملخص متاح'**
-  String get noSummaryAvailable;
-
   /// No description provided for @financialSummary.
   ///
   /// In ar, this message translates to:
@@ -1381,12 +1309,6 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'إجمالي الأرباح'**
   String get totalProfits;
-
-  /// No description provided for @confidence.
-  ///
-  /// In ar, this message translates to:
-  /// **'ثقة'**
-  String get confidence;
 
   /// No description provided for @appointmentOn.
   ///

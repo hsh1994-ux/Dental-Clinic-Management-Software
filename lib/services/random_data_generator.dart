@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:path/path.dart' as p;
+import 'app_storage.dart';
 
 import '../models/appointment.dart';
 import '../models/expense.dart';
@@ -174,36 +176,46 @@ class RandomDataGenerator {
 
   List<String> _buildXrayImagePaths() {
     final paths = <String>[];
-    // Try to locate the x-ray_images folder relative to the executable or
-    // common dev locations.
-    final candidates = [
-      Platform.resolvedExecutable, // running binary path
-      Platform.script.toFilePath(), // script path (dart run)
-    ];
 
+    List<String> _scanXrayDir(Directory root) {
+      final found = <String>[];
+      for (final sub in ['1', '2']) {
+        final subDir = Directory(p.join(root.path, sub));
+        if (subDir.existsSync()) {
+          found.addAll(subDir
+              .listSync()
+              .whereType<File>()
+              .where((f) {
+                final ext = f.path.toLowerCase();
+                return ext.endsWith('.jpg') ||
+                    ext.endsWith('.jpeg') ||
+                    ext.endsWith('.png');
+              })
+              .map((f) => f.path));
+        }
+      }
+      return found;
+    }
+
+    // 1. Check ClinC Data/x-ray_images/ first (release app location).
+    final clinicDataXray =
+        Directory(p.join(AppStorage.dataDir, 'x-ray_images'));
+    if (clinicDataXray.existsSync()) {
+      paths.addAll(_scanXrayDir(clinicDataXray));
+      if (paths.isNotEmpty) return paths;
+    }
+
+    // 2. Fall back: walk up from the executable (works in development).
+    final candidates = [
+      Platform.resolvedExecutable,
+      Platform.script.toFilePath(),
+    ];
     for (final candidate in candidates) {
-      // Walk up until we find the folder or run out of parents
       var dir = Directory(candidate).parent;
       for (int i = 0; i < 10; i++) {
-        final xrayDir = Directory('${dir.path}/x-ray_images');
+        final xrayDir = Directory(p.join(dir.path, 'x-ray_images'));
         if (xrayDir.existsSync()) {
-          for (final sub in ['1', '2']) {
-            final subDir = Directory('${xrayDir.path}/$sub');
-            if (subDir.existsSync()) {
-              final files = subDir
-                  .listSync()
-                  .whereType<File>()
-                  .where((f) {
-                    final ext = f.path.toLowerCase();
-                    return ext.endsWith('.jpg') ||
-                        ext.endsWith('.jpeg') ||
-                        ext.endsWith('.png');
-                  })
-                  .map((f) => f.path)
-                  .toList();
-              paths.addAll(files);
-            }
-          }
+          paths.addAll(_scanXrayDir(xrayDir));
           return paths;
         }
         final parent = dir.parent;

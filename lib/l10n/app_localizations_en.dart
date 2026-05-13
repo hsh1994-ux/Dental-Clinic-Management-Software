@@ -599,9 +599,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoadingImage => 'Error loading image';
 
   @override
-  String get annotatedImage => 'Annotated Image';
-
-  @override
   String get patientExpenses => 'Patient Expenses';
 
   @override
@@ -620,39 +617,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordRequired => 'Password is required';
 
   @override
-  String get xRayAnalysisError => 'X-Ray Analysis Error';
-
-  @override
-  String get xRayAnalysisResults => 'X-Ray Analysis Results';
-
-  @override
-  String get analysisId => 'Analysis ID';
-
-  @override
-  String get analysisDate => 'Analysis Date';
-
-  @override
-  String get imageQuality => 'Image Quality';
-
-  @override
-  String get findings => 'Findings';
-
-  @override
-  String get noSpecificFindingsDetected => 'No specific findings detected.';
-
-  @override
-  String get severity => 'Severity';
-
-  @override
-  String get recommendation => 'Recommendation';
-
-  @override
-  String get medicalAdviceSummary => 'Medical Advice Summary';
-
-  @override
-  String get noSummaryAvailable => 'No summary available.';
-
-  @override
   String get financialSummary => 'Financial Summary';
 
   @override
@@ -660,9 +624,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get totalProfits => 'Total Profits';
-
-  @override
-  String get confidence => 'confidence';
 
   @override
   String appointmentOn(String date) {

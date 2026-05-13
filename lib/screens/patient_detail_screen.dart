@@ -5,7 +5,6 @@ import 'package:clinc/models/appointment.dart';
 import 'package:clinc/models/invoice.dart';
 import 'package:clinc/models/treatment.dart';
 import 'package:clinc/screens/invoice_form_screen.dart';
-import 'package:clinc/services/xray_analysis_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -36,47 +35,6 @@ class PatientDetailScreen extends StatefulWidget {
 }
 
 class _PatientDetailScreenState extends State<PatientDetailScreen> {
-  XRayAnalysisResult? _xrayAnalysisResult;
-  bool _isLoadingXRayAnalysis = false;
-  String? _xrayAnalysisError;
-  bool _isAnalysisPerformed = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isAnalysisPerformed && widget.patient.xrayImage != null && widget.patient.xrayImage!.isNotEmpty) {
-      _isAnalysisPerformed = true;
-      _performXRayAnalysis(widget.patient.xrayImage!);
-    }
-  }
-
-  Future<void> _performXRayAnalysis(String imagePath) async {
-    setState(() {
-      _isLoadingXRayAnalysis = true;
-      _xrayAnalysisError = null;
-    });
-
-    try {
-      final locale = AppLocalizations.of(context)!.localeName;
-      final result = await XRayAnalysisService().analyzeXRayImage(imagePath, widget.patient.name, locale);
-      setState(() {
-        _xrayAnalysisResult = result;
-        // If the Python script returns an error status, set the error message
-        if (result.analysisStatus == 'error') {
-          _xrayAnalysisError = result.errorMessage ?? 'Unknown analysis error';
-        }
-      });
-    } catch (e) {
-      setState(() {
-        _xrayAnalysisError = e.toString();
-      });
-    } finally {
-      setState(() {
-        _isLoadingXRayAnalysis = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -293,8 +251,6 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          _buildXRayAnalysisSection(context),
         ] else
           Container(
             height: 200,
@@ -312,192 +268,6 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           ),
       ],
     );
-  }
-
-  Widget _buildXRayAnalysisSection(BuildContext context) {
-    final appLocalizations = AppLocalizations.of(context)!;
-
-    if (_isLoadingXRayAnalysis) {
-      return const Center(child: CircularProgressIndicator());
-    } else if (_xrayAnalysisError != null) {
-      return Card(
-        color: Theme.of(context).colorScheme.errorContainer,
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                appLocalizations.xRayAnalysisError,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onErrorContainer,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _xrayAnalysisError!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onErrorContainer,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      );
-    } else if (_xrayAnalysisResult != null) {
-      final result = _xrayAnalysisResult!;
-      final List<Widget> findingWidgets = [];
-
-      if (result.findings.isEmpty) {
-        findingWidgets.add(Text(appLocalizations.noSpecificFindingsDetected));
-      } else {
-        for (final finding in result.findings) {
-          findingWidgets.add(
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '• ${finding.area}: ${finding.issue} (${(finding.confidence * 100).toStringAsFixed(0)}% ${appLocalizations.confidence})',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  if (finding.severity != null &&
-                      finding.severity!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16.0),
-                      child: Text(
-                        '${appLocalizations.severity}: ${finding.severity}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                  if (finding.recommendation != null &&
-                      finding.recommendation!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16.0),
-                      child: Text(
-                        '${appLocalizations.recommendation}: ${finding.recommendation}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-        }
-      }
-
-      final List<Widget> children = [
-        Text(
-          appLocalizations.xRayAnalysisResults,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Theme.of(context).primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        _buildDetailRow(
-          context,
-          Icons.analytics_outlined,
-          appLocalizations.analysisId,
-          result.analysisId,
-        ),
-        _buildDetailRow(
-          context,
-          Icons.access_time,
-          appLocalizations.analysisDate,
-          result.timestamp != null
-              ? DateFormat.yMd(appLocalizations.localeName)
-                  .add_jm()
-                  .format(result.timestamp!)
-              : appLocalizations.na,
-        ),
-        _buildDetailRow(
-          context,
-          Icons.image_outlined,
-          appLocalizations.imageQuality,
-          result.imageQuality ?? appLocalizations.na,
-        ),
-        const Divider(height: 24),
-        Text(
-          appLocalizations.findings,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 8),
-        ...findingWidgets,
-        const Divider(height: 24),
-        Text(
-          appLocalizations.medicalAdviceSummary,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          result.medicalAdviceSummary ?? appLocalizations.noSummaryAvailable,
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-      ];
-
-      if (result.annotatedImagePath != null &&
-          File(result.annotatedImagePath!).existsSync()) {
-        children.addAll([
-          const SizedBox(height: 24),
-          Text(
-            appLocalizations.annotatedImage,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FullScreenImageViewer(
-                    heroTag: result.annotatedImagePath!,
-                    imagePath: result.annotatedImagePath!,
-                  ),
-                ),
-              );
-            },
-            child: Hero(
-              tag: result.annotatedImagePath!,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12.0),
-                child: Image.file(
-                  File(result.annotatedImagePath!),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Center(
-                    child: Text(
-                      appLocalizations.errorLoadingImage,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ]);
-      }
-
-      return Card(
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
-          ),
-        ),
-      );
-    }
-    return const SizedBox.shrink();
   }
 
   Widget _buildTabs(BuildContext context, {required bool isScrollable}) {
@@ -526,9 +296,6 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                   isScrollable: isScrollable),
               _XRayTab(
                   patient: widget.patient,
-                  xrayAnalysisResult: _xrayAnalysisResult,
-                  isLoadingXRayAnalysis: _isLoadingXRayAnalysis,
-                  xrayAnalysisError: _xrayAnalysisError,
                   isScrollable: isScrollable),
             ],
           ),
@@ -944,16 +711,10 @@ class _AppointmentsTab extends _BasePatientTab<Appointment> {
 
 class _XRayTab extends StatefulWidget {
   final Patient patient;
-  final XRayAnalysisResult? xrayAnalysisResult;
-  final bool isLoadingXRayAnalysis;
-  final String? xrayAnalysisError;
   final bool isScrollable;
 
   const _XRayTab({
     required this.patient,
-    required this.xrayAnalysisResult,
-    required this.isLoadingXRayAnalysis,
-    required this.xrayAnalysisError,
     required this.isScrollable,
   });
 
@@ -1151,7 +912,7 @@ class _XRayTabState extends State<_XRayTab> {
               const SizedBox(height: 16),
             ],
 
-            // ── Single image (patient.xrayImage – backward compat + analysis) ──
+            // ── Single image (patient.xrayImage – backward compat) ──
             if (hasSingleImage) ...[
               if (galleryImages.isEmpty)
                 Row(
@@ -1172,8 +933,6 @@ class _XRayTabState extends State<_XRayTab> {
                   ],
                 ),
               _buildSingleImageCard(context, appLocalizations),
-              const SizedBox(height: 16),
-              _buildXRayAnalysisSection(context, appLocalizations),
             ],
           ],
         );
@@ -1240,217 +999,6 @@ class _XRayTabState extends State<_XRayTab> {
     );
   }
 
-  Widget _buildXRayAnalysisSection(BuildContext context, AppLocalizations appLocalizations) {
-    final xrayAnalysisResult = widget.xrayAnalysisResult;
-    final isLoadingXRayAnalysis = widget.isLoadingXRayAnalysis;
-    final xrayAnalysisError = widget.xrayAnalysisError;
-    if (isLoadingXRayAnalysis) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      );
-    } else if (xrayAnalysisError != null) {
-      return Card(
-        color: Theme.of(context).colorScheme.errorContainer,
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    color: Theme.of(context).colorScheme.onErrorContainer,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    appLocalizations.xRayAnalysisError,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                xrayAnalysisError!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onErrorContainer,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      );
-    } else if (xrayAnalysisResult != null) {
-      return Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                appLocalizations.xRayAnalysisResults,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              _buildDetailRow(
-                context,
-                Icons.analytics_outlined,
-                appLocalizations.analysisId,
-                xrayAnalysisResult!.analysisId,
-              ),
-              _buildDetailRow(
-                context,
-                Icons.access_time,
-                appLocalizations.analysisDate,
-                xrayAnalysisResult!.timestamp != null
-                    ? DateFormat.yMd(appLocalizations.localeName)
-                        .add_jm()
-                        .format(xrayAnalysisResult!.timestamp!)
-                    : appLocalizations.na,
-              ),
-              _buildDetailRow(
-                context,
-                Icons.image_outlined,
-                appLocalizations.imageQuality,
-                xrayAnalysisResult!.imageQuality ?? appLocalizations.na,
-              ),
-              const Divider(height: 24),
-              Text(
-                appLocalizations.findings,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              if (xrayAnalysisResult!.findings.isEmpty)
-                Text(appLocalizations.noSpecificFindingsDetected)
-              else
-                ...xrayAnalysisResult!.findings.map((finding) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Card(
-                        color: Theme.of(context).colorScheme.surfaceVariant,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.warning_amber_rounded,
-                                    size: 20,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      '${finding.area}: ${finding.issue}',
-                                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${appLocalizations.confidence}: ${(finding.confidence * 100).toStringAsFixed(0)}%',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                              if (finding.severity != null && finding.severity!.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${appLocalizations.severity}: ${finding.severity}',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              ],
-                              if (finding.recommendation != null && finding.recommendation!.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${appLocalizations.recommendation}: ${finding.recommendation}',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    )),
-              const Divider(height: 24),
-              Text(
-                appLocalizations.medicalAdviceSummary,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                xrayAnalysisResult!.medicalAdviceSummary ?? appLocalizations.noSummaryAvailable,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              if (xrayAnalysisResult!.annotatedImagePath != null &&
-                  File(xrayAnalysisResult!.annotatedImagePath!).existsSync()) ...[
-                const Divider(height: 24),
-                Text(
-                  appLocalizations.annotatedImage,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => FullScreenImageViewer(
-                          heroTag: xrayAnalysisResult!.annotatedImagePath!,
-                          imagePath: xrayAnalysisResult!.annotatedImagePath!,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Hero(
-                    tag: xrayAnalysisResult!.annotatedImagePath!,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12.0),
-                      child: Image.file(
-                        File(xrayAnalysisResult!.annotatedImagePath!),
-                        width: double.infinity,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => Center(
-                          child: Text(
-                            appLocalizations.errorLoadingImage,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
-    }
-    return const SizedBox.shrink();
-  }
 }
 
 class FullScreenImageViewer extends StatelessWidget {

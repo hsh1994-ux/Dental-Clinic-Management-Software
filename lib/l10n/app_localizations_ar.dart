@@ -597,9 +597,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get errorLoadingImage => 'خطأ في تحميل الصورة';
 
   @override
-  String get annotatedImage => 'صورة مشروحة';
-
-  @override
   String get patientExpenses => 'مصروفات المرضى';
 
   @override
@@ -618,39 +615,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordRequired => 'كلمة المرور مطلوبة';
 
   @override
-  String get xRayAnalysisError => 'خطأ في تحليل الأشعة السينية';
-
-  @override
-  String get xRayAnalysisResults => 'نتائج تحليل الأشعة السينية';
-
-  @override
-  String get analysisId => 'معرف التحليل';
-
-  @override
-  String get analysisDate => 'تاريخ التحليل';
-
-  @override
-  String get imageQuality => 'جودة الصورة';
-
-  @override
-  String get findings => 'النتائج';
-
-  @override
-  String get noSpecificFindingsDetected => 'لم يتم الكشف عن نتائج محددة.';
-
-  @override
-  String get severity => 'الخطورة';
-
-  @override
-  String get recommendation => 'التوصية';
-
-  @override
-  String get medicalAdviceSummary => 'ملخص النصيحة الطبية';
-
-  @override
-  String get noSummaryAvailable => 'لا يوجد ملخص متاح';
-
-  @override
   String get financialSummary => 'الملخص المالي';
 
   @override
@@ -658,9 +622,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get totalProfits => 'إجمالي الأرباح';
-
-  @override
-  String get confidence => 'ثقة';
 
   @override
   String appointmentOn(String date) {
